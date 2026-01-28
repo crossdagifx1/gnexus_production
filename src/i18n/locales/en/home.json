@@ -1,0 +1,26 @@
+{
+    "hero": {
+        "badge": "Habesha Futurism • Digital Excellence",
+        "title": "Ancient Wisdom, Futuristic Technology",
+        "subtitle": "We are G-Nexus — Ethiopia's premier digital platform building the future through web, 3D, and AI innovation.",
+        "cta": {
+            "primary": "Start Your Project",
+            "secondary": "Explore Platform"
+        },
+        "features": {
+            "fast": "Lightning Fast",
+            "secure": "Secure",
+            "global": "Global Ready"
+        },
+        "stats": {
+            "projects": "Projects Delivered",
+            "founders": "Expert Founders",
+            "possibilities": "Possibilities"
+        },
+        "scroll": "Scroll to explore"
+    },
+    "services": {
+        "title": "Our Services",
+        "subtitle": "Comprehensive digital solutions for modern businesses"
+    }
+}

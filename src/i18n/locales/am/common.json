@@ -1,0 +1,27 @@
+{
+    "nav": {
+        "services": "አገልግሎቶች",
+        "about": "ስለ እኛ",
+        "team": "ቡድን",
+        "contact": "ያግኙን",
+        "blog": "ብሎግ",
+        "portfolio": "ፖርትፎሊዮ"
+    },
+    "buttons": {
+        "getStarted": "ይጀምሩ",
+        "learnMore": "ተጨማሪ ይመልከቱ",
+        "sendMessage": "መልእክት ይላኩ",
+        "viewAll": "ሁሉንም ይመልከቱ"
+    },
+    "footer": {
+        "description": "በድረ-ገጽ፣ ባለ 3-ዲ እና AI ፈጠራ የወደፊቱን የምንገነባ የኢትዮጵያ ግንባር ቀደም ዲጂታል መድረክ።",
+        "quickLinks": "ፈጣን አገናኞች",
+        "services": "አገልግሎቶች",
+        "company": "ድርጅት",
+        "legal": "ህጋዊ",
+        "copyright": "ሁሉም መብቶች የተጠበቁ ናቸው",
+        "madeWith": "በ",
+        "in": "ተሰርቷል",
+        "location": "ኢትዮጵያ"
+    }
+}

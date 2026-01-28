@@ -1,0 +1,72 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldCyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00BFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D4AF37;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Hexagonal network pattern (subtle) -->
+  <g opacity="0.3" stroke="url(#goldCyanGradient)" stroke-width="2" fill="none">
+    <polygon points="256,120 310,145 310,195 256,220 202,195 202,145" />
+    <polygon points="310,195 364,220 364,270 310,295 256,270 256,220" />
+    <polygon points="202,195 148,220 148,270 202,295 256,270 256,220" />
+    <polygon points="256,270 310,295 310,345 256,370 202,345 202,295" />
+  </g>
+  
+  <!-- Main "G" shape with gradient -->
+  <g filter="url(#glow)">
+    <!-- Outer arc of G -->
+    <path 
+      d="M 256 90 
+         A 166 166 0 1 1 256 422
+         A 166 166 0 0 1 256 90
+         M 256 140
+         A 116 116 0 0 0 256 372
+         A 116 116 0 0 1 256 140 Z"
+      fill="url(#goldCyanGradient)"
+      opacity="0.95"
+    />
+    
+    <!-- G opening and horizontal bar -->
+    <path 
+      d="M 372 256 
+         L 372 180
+         L 422 180
+         L 422 256
+         L 320 256
+         L 320 306
+         L 372 306 Z"
+      fill="url(#goldCyanGradient)"
+      opacity="0.95"
+    />
+    
+    <!-- Network connection nodes -->
+    <circle cx="256" cy="140" r="8" fill="#D4AF37" opacity="0.9"/>
+    <circle cx="372" cy="256" r="8" fill="#00BFFF" opacity="0.9"/>
+    <circle cx="256" cy="372" r="8" fill="#D4AF37" opacity="0.9"/>
+    <circle cx="140" cy="256" r="8" fill="#00BFFF" opacity="0.9"/>
+  </g>
+  
+  <!-- Circuit lines connecting nodes (subtle) -->
+  <g stroke="url(#goldCyanGradient)" stroke-width="2.5" opacity="0.5" fill="none">
+    <line x1="256" y1="148" x2="256" y2="165" />
+    <line x1="364" y1="256" x2="347" y2="256" />
+    <line x1="256" y1="364" x2="256" y2="347" />
+    <line x1="148" y1="256" x2="165" y2="256" />
+  </g>
+  
+  <!-- Center core rings -->
+  <circle cx="256" cy="256" r="80" fill="none" stroke="url(#goldCyanGradient)" stroke-width="2" opacity="0.4"/>
+  <circle cx="256" cy="256" r="60" fill="none" stroke="url(#goldCyanGradient)" stroke-width="2" opacity="0.3"/>
+  <circle cx="256" cy="256" r="45" fill="none" stroke="url(#goldCyanGradient)" stroke-width="1.5" opacity="0.2"/>
+</svg>

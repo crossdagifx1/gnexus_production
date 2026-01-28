@@ -1,0 +1,51 @@
+{
+    "services": {
+        "title": "Our Services",
+        "subtitle": "Comprehensive digital solutions for modern businesses",
+        "webDev": {
+            "title": "Web Development",
+            "description": "Custom websites and web applications built with cutting-edge technology"
+        },
+        "threeDArch": {
+            "title": "3D Architecture",
+            "description": "Stunning architectural visualizations and virtual tours"
+        },
+        "aiAutomation": {
+            "title": "AI Automation",
+            "description": "Intelligent automation solutions to streamline your workflow"
+        }
+    },
+    "gnexus": {
+        "badge": "G-Nexus Platform",
+        "title": "Your Business Operating System",
+        "subtitle": "The all-in-one digital platform built for Ethiopian SMEs",
+        "features": {
+            "crm": "CRM System",
+            "inventory": "Inventory Management",
+            "payments": "Local Payments",
+            "ai": "AI Assistant"
+        },
+        "pricing": {
+            "title": "Simple, Transparent Pricing",
+            "starter": "Starter",
+            "professional": "Professional",
+            "enterprise": "Enterprise",
+            "perMonth": "/month",
+            "getStarted": "Get Started",
+            "contactSales": "Contact Sales"
+        }
+    },
+    "about": {
+        "title": "About G-Squad",
+        "subtitle": "Building Ethiopia's digital future",
+        "mission": "Our Mission",
+        "vision": "Our Vision",
+        "values": "Our Values"
+    },
+    "team": {
+        "title": "Meet Our Team",
+        "subtitle": "The minds behind G-Nexus",
+        "founders": "Founders",
+        "developers": "Developers"
+    }
+}

@@ -1,0 +1,51 @@
+{
+    "services": {
+        "title": "የእኛ አገልግሎቶች",
+        "subtitle": "ለዘመናዊ ንግዶች አጠቃላይ ዲጂታል መፍትሄዎች",
+        "webDev": {
+            "title": "የድረ-ገጽ ልማት",
+            "description": "በዘመናዊ ቴክኖሎጂ የተገነቡ ብጁ ድረ-ገጾች እና የድር መተግበሪያዎች"
+        },
+        "threeDArch": {
+            "title": "ባለ 3-ዲ አርክቴክቸር",
+            "description": "አስደናቂ የስነ-ህንፃ ምስላዊነቶች እና ምናባዊ ጉብኝቶች"
+        },
+        "aiAutomation": {
+            "title": "AI ራስ-ሰር መስራት",
+            "description": "የስራ ፍሰትዎን ለማቀላጠፍ የማሰብ ራስ-ሰር መንገዶች"
+        }
+    },
+    "gnexus": {
+        "badge": "ጂ-ኔክሰስ መድረክ",
+        "title": "የእርስዎ የንግድ ስራ አሰራር ስርዓት",
+        "subtitle": "ለኢትዮጵያ አነስተኛና መካከለኛ ድርጅቶች የተሰራ ሁሉንም-በ-አንድ ዲጂታል መድረክ",
+        "features": {
+            "crm": "የደንበኛ ግንኙነት አስተዳደር",
+            "inventory": "የእቃ አስተዳደር",
+            "payments": "የአካባቢ ክፍያዎች",
+            "ai": "AI ረዳት"
+        },
+        "pricing": {
+            "title": "ቀላል፣ ግልፅ ዋጋ",
+            "starter": "መነሻ",
+            "professional": "ፕሮፌሽናል",
+            "enterprise": "ድርጅታዊ",
+            "perMonth": "/ወር",
+            "getStarted": "ይጀምሩ",
+            "contactSales": "ሽያጭን ያግኙ"
+        }
+    },
+    "about": {
+        "title": "ስለ ጂ-ስኳድ",
+        "subtitle": "የኢትዮጵያን ዲጂታል ወደፊት እየገነባን",
+        "mission": "የእኛ ተልዕኮ",
+        "vision": "የእኛ ራዕይ",
+        "values": "የእኛ እሴቶች"
+    },
+    "team": {
+        "title": "የእኛን ቡድን ይገናኙ",
+        "subtitle": "ከጂ-ኔክሰስ ጀርባ ያሉ አእምሮዎች",
+        "founders": "መስራቾች",
+        "developers": "ገንቢዎች"
+    }
+}

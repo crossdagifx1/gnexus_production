@@ -1,0 +1,27 @@
+{
+    "nav": {
+        "services": "Services",
+        "about": "About",
+        "team": "Team",
+        "contact": "Contact",
+        "blog": "Blog",
+        "portfolio": "Portfolio"
+    },
+    "buttons": {
+        "getStarted": "Get Started",
+        "learnMore": "Learn More",
+        "sendMessage": "Send Message",
+        "viewAll": "View All"
+    },
+    "footer": {
+        "description": "Ethiopia's premier digital platform building the future through web, 3D, and AI innovation.",
+        "quickLinks": "Quick Links",
+        "services": "Services",
+        "company": "Company",
+        "legal": "Legal",
+        "copyright": "All rights reserved",
+        "madeWith": "Made with",
+        "in": "in",
+        "location": "Ethiopia"
+    }
+}
