@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ThumbsUp, ThumbsDown, Heart, Laugh, PartyPopper, ThinkingFace, Plus } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Heart, Laugh, PartyPopper, Brain, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -21,7 +21,7 @@ const REACTION_EMOJIS = [
     { emoji: '❤️', icon: Heart, label: 'Love' },
     { emoji: '😂', icon: Laugh, label: 'Funny' },
     { emoji: '🎉', icon: PartyPopper, label: 'Celebrate' },
-    { emoji: '🤔', icon: ThinkingFace, label: 'Thinking' },
+    { emoji: '🤔', icon: Brain, label: 'Thinking' },
     { emoji: '👎', icon: ThumbsDown, label: 'Dislike' }
 ];
 

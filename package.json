@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -99,13 +99,17 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "@vitest/ui": "^4.0.16",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "husky": "^9.1.7",
     "i18next": "^25.7.3",
     "i18next-browser-languagedetector": "^8.2.0",
     "jsdom": "^27.4.0",
+    "lint-staged": "^15.4.3",
     "lovable-tagger": "^1.1.13",
     "postcss": "^8.5.6",
     "react-ga4": "^2.1.0",
@@ -118,10 +122,7 @@
     "vite-plugin-imagemin": "^0.4.0",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.16",
-    "workbox-window": "^7.4.0",
-    "concurrently": "^9.1.2",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.4.3"
+    "workbox-window": "^7.4.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
