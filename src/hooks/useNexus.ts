@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import {
     generateText,
     generateCode,
@@ -14,6 +15,7 @@ import {
     deepAnalysis,
     chatCompletion,
     streamText,
+    generateTextStream,
     auditAgentOutputs,
     speechToText,
     textToSpeech,
@@ -57,6 +59,7 @@ export interface UseNexusReturn extends UseNexusState {
     // Chat Functions
     chat: (messages: ChatMessage[], model?: ModelKey) => Promise<string | null>;
     streamChat: (prompt: string, model?: ModelKey, onChunk?: (chunk: string) => void) => Promise<string | null>;
+    stopGeneration: () => void;
     setMessages: (messages: ChatMessage[]) => void;
 
     // Multi-Agent
@@ -111,6 +114,15 @@ export function useNexus(): UseNexusReturn {
         });
     }, []);
 
+    const stopGeneration = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+            setState(prev => ({ ...prev, loading: false, streaming: false }));
+            toast.info('Generation stopped');
+        }
+    }, []);
+
     // =============================================================================
     // CORE FUNCTIONS
     // =============================================================================
@@ -123,19 +135,33 @@ export function useNexus(): UseNexusReturn {
         prompt: string,
         params?: TextGenerationParams
     ): Promise<string | null> => {
+        // Abort previous request if any
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         setLoading(true);
 
         try {
-            const response = await generateText(agent, prompt, params);
+            const response = await generateText(agent, prompt, {
+                ...params,
+                signal: abortControllerRef.current.signal
+            });
             setResult(response, agent);
             return response.success ? response.data || null : null;
-        } catch (error) {
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                return null;
+            }
             setState(prev => ({
                 ...prev,
                 loading: false,
                 error: error instanceof Error ? error.message : 'Request failed',
             }));
             return null;
+        } finally {
+            abortControllerRef.current = null;
         }
     }, [setLoading, setResult]);
 
@@ -310,26 +336,37 @@ export function useNexus(): UseNexusReturn {
     }, [setLoading, setResult]);
 
     /**
-     * Stream chat response
+     * Stream chat response with true streaming support
      */
     const streamChat = useCallback(async (
         prompt: string,
         model: ModelKey = 'planner',
         onChunk?: (chunk: string) => void
     ): Promise<string | null> => {
+        // Abort previous
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         setLoading(true, true);
         setState(prev => ({ ...prev, output: '' }));
 
         try {
             let fullText = '';
 
-            const handleChunk = (chunk: string) => {
-                fullText += chunk;
-                setState(prev => ({ ...prev, output: fullText }));
-                onChunk?.(chunk);
-            };
-
-            const response = await streamText(model, prompt, handleChunk);
+            const response = await generateTextStream(
+                model,
+                prompt,
+                (chunk, full) => {
+                    fullText = full;
+                    setState(prev => ({ ...prev, output: full }));
+                    onChunk?.(chunk);
+                },
+                {
+                    signal: abortControllerRef.current.signal
+                }
+            );
 
             setState(prev => ({
                 ...prev,
@@ -341,7 +378,11 @@ export function useNexus(): UseNexusReturn {
             }));
 
             return response.success ? response.data || fullText : null;
-        } catch (error) {
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                console.log('Stream aborted');
+                return null;
+            }
             setState(prev => ({
                 ...prev,
                 loading: false,
@@ -349,6 +390,11 @@ export function useNexus(): UseNexusReturn {
                 error: error instanceof Error ? error.message : 'Stream failed',
             }));
             return null;
+        } finally {
+            if (abortControllerRef.current?.signal.aborted) {
+                // Keep abort controller null if finished
+                abortControllerRef.current = null;
+            }
         }
     }, [setLoading]);
 
@@ -417,11 +463,7 @@ export function useNexus(): UseNexusReturn {
     // =============================================================================
 
     const setMessages = useCallback((messages: ChatMessage[]) => {
-        // This is a bit of a hack to expose setMessages through the main hook if needed, 
-        // but primarily we need it in useNexusChat.
-        // For the main hook, we might distinct internal state vs external.
-        // For now, let's just leave it empty here or managing a local state if useNexus was used for chat directly.
-        // However, useNexus is mostly a wrapper. Let's look at useNexusChat.
+        // Placeholder
     }, []);
 
     return {
@@ -431,6 +473,7 @@ export function useNexus(): UseNexusReturn {
         // Core
         askAgent,
         clearOutput,
+        stopGeneration,
 
         // Specialized
         askCoder,
@@ -445,7 +488,7 @@ export function useNexus(): UseNexusReturn {
         // Chat
         chat,
         streamChat,
-        setMessages, // Logic placeholder
+        setMessages,
 
         // Multi-Agent
         runPipeline,
@@ -463,50 +506,188 @@ export function useNexus(): UseNexusReturn {
 export function useNexusChat(initialModel: ModelKey = 'planner') {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [activeModel, setActiveModel] = useState<ModelKey>(initialModel);
+    const [loading, setLoading] = useState(false);
+    const [streaming, setStreaming] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
     const nexus = useNexus();
 
-    const sendMessage = useCallback(async (content: string) => {
-        const userMessage: ChatMessage = {
-            id: `msg-${Date.now()}`,
-            role: 'user',
-            content,
-            timestamp: new Date(),
-            status: 'sent',
-        };
+    const stopGeneration = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+            setStreaming(false);
+            setLoading(false);
+        }
+    }, []);
 
-        // Optimistic update
-        setMessages(prev => [...prev, userMessage]);
+    const sendMessage = useCallback(async (content: string, attachments: File[] = []) => {
+        try {
+            // Abort any existing request
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            abortControllerRef.current = new AbortController();
 
-        // Use standard chat for all messages
-        const response = await nexus.chat([...messages, userMessage], activeModel);
+            setLoading(true);
+            setError(null);
 
-        if (response) {
-            const assistantMessage: ChatMessage = {
+            // Process attachments
+            const processedImages: string[] = [];
+            let processedTextContext = '';
+
+            for (const file of attachments) {
+                if (file.type.startsWith('image/')) {
+                    // Convert image to base64
+                    const base64 = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsDataURL(file);
+                    });
+                    processedImages.push(base64);
+                } else if (
+                    file.type.startsWith('text/') ||
+                    file.name.endsWith('.ts') ||
+                    file.name.endsWith('.js') ||
+                    file.name.endsWith('.json') ||
+                    file.name.endsWith('.md')
+                ) {
+                    // Read text content
+                    const text = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsText(file);
+                    });
+                    processedTextContext += `\n\n--- File: ${file.name} ---\n${text}\n--- End File ---\n`;
+                }
+            }
+
+            // Append context to content if exists
+            const distinctContent = processedTextContext ? `${content}\n${processedTextContext}` : content;
+
+            const userMessage: ChatMessage = {
                 id: `msg-${Date.now()}`,
-                role: 'assistant',
-                content: response,
+                role: 'user',
+                content: distinctContent, // Original content
                 timestamp: new Date(),
-                model: activeModel,
                 status: 'sent',
             };
-            setMessages(prev => [...prev, assistantMessage]);
-            return response;
-        }
 
-        return null;
-    }, [messages, activeModel, nexus]);
+            // Optimistic update
+            setMessages(prev => [...prev, userMessage]);
+
+            const messageHistory = messages.map(m => ({
+                role: m.role as any,
+                content: m.content
+            }));
+
+            // For history, we just send the text content. 
+            // Images are attached to the current Turn only in param.
+            messageHistory.push({ role: 'user', content: distinctContent });
+
+            setStreaming(true);
+            let accumulatedContent = '';
+            let accumulatedReasoning = '';
+
+            // Auto-switch to Vision model if images are present and current model isn't capable
+            // (Simple heuristic: if not vision, switch to generic vision or specific one)
+            // For now, let's trust the 'activeModel' or maybe force 'vision' if images exist?
+            const targetModel = (processedImages.length > 0 && activeModel !== 'vision' && activeModel !== 'agentic')
+                ? 'vision'
+                : activeModel;
+
+            const response = await generateTextStream(
+                targetModel,
+                distinctContent,
+                (chunk, full, reasoning) => {
+                    accumulatedContent = full;
+                    accumulatedReasoning = reasoning || '';
+
+                    setMessages(prev => {
+                        const last = prev[prev.length - 1];
+                        if (last?.id === 'streaming-msg') {
+                            return [...prev.slice(0, -1), {
+                                id: 'streaming-msg',
+                                role: 'assistant',
+                                content: full,
+                                reasoning: reasoning,
+                                timestamp: last.timestamp,
+                                model: targetModel,
+                                status: 'sent'
+                            }];
+                        }
+                        return [...prev, {
+                            id: 'streaming-msg',
+                            role: 'assistant',
+                            content: full,
+                            reasoning: reasoning,
+                            timestamp: new Date(),
+                            model: targetModel,
+                            status: 'sent'
+                        }];
+                    });
+                },
+                {
+                    messages: messageHistory,
+                    temperature: 0.7,
+                    max_new_tokens: 2048,
+                    images: processedImages,
+                    signal: abortControllerRef.current?.signal
+                }
+            );
+
+            if (!response.success) {
+                throw new Error(response.error);
+            }
+
+            // Final message update with real ID
+            setMessages(prev => {
+                const filtered = prev.filter(m => m.id !== 'streaming-msg');
+                return [...filtered, {
+                    id: `msg-${Date.now()}`,
+                    role: 'assistant',
+                    content: accumulatedContent,
+                    reasoning: accumulatedReasoning,
+                    timestamp: new Date(),
+                    model: activeModel,
+                    status: 'sent'
+                }];
+            });
+
+            return accumulatedContent;
+
+        } catch (err: any) {
+            if (err.name === 'AbortError') {
+                console.log('[useNexusChat] Generation stopped by user');
+                return null;
+            }
+            console.error('[useNexusChat] Error:', err);
+            setError(err.message);
+            toast.error(err.message);
+            return null;
+        } finally {
+            setLoading(false);
+            setStreaming(false);
+            abortControllerRef.current = null;
+        }
+    }, [messages, activeModel]);
 
     const clearMessages = useCallback(() => {
         setMessages([]);
+        setError(null);
     }, []);
 
     return {
         messages,
-        setMessages, // Exported for external sync
+        setMessages,
         activeModel,
         setActiveModel,
         sendMessage,
+        stopGeneration,
         clearMessages,
+        loading,
+        streaming,
+        error,
         ...nexus,
     };
 }

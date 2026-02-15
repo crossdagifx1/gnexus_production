@@ -16,6 +16,11 @@ export default defineConfig(({ mode }) => ({
         rewrite: (path) => path.replace(/^\/api\/hf/, '/hf-inference/models'),
         secure: false,
       },
+      '/api.php': {
+        target: 'https://gnexuset.com',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   plugins: [

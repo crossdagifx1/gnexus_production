@@ -1,41 +1,50 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { PageHero } from "@/components/PageHero";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { Box, Eye, Layers, Camera, ArrowRight, Play, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { gsap } from "gsap";
+import gsap from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { nexus, type Service } from '@/lib/api/nexus-core';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const services = [
+const defaultServices: any[] = [
   {
-    icon: <Box className="w-8 h-8" />,
+    icon: 'Box',
     title: "Architectural Visualization",
     description: "Photorealistic 3D renders that bring architectural concepts to life before a single brick is laid.",
     image: "🏛️",
   },
   {
-    icon: <Eye className="w-8 h-8" />,
+    icon: 'Eye',
     title: "Virtual Tours",
     description: "Immersive 360° virtual experiences that let clients walk through spaces from anywhere in the world.",
     image: "🌐",
   },
   {
-    icon: <Layers className="w-8 h-8" />,
+    icon: 'Layers',
     title: "Product Rendering",
     description: "Studio-quality 3D product visualizations that showcase your products in their best light.",
     image: "💎",
   },
   {
-    icon: <Camera className="w-8 h-8" />,
+    icon: 'Camera',
     title: "Animation & Motion",
     description: "Cinematic architectural flythrough animations and product reveal videos that captivate audiences.",
     image: "🎬",
   },
 ];
+
+const IconRenderer = ({ icon }: { icon: string | React.ReactNode }) => {
+  if (typeof icon !== 'string') return <>{icon}</>;
+  const icons: any = { Box, Eye, Layers, Camera, Star };
+  const IconComponent = icons[icon];
+  if (IconComponent) return <IconComponent className="w-8 h-8" />;
+  return <span className="text-3xl">{icon}</span>;
+}
 
 const portfolio = [
   { title: "Luxury Villa Complex", category: "Residential", rating: 5 },
@@ -58,6 +67,22 @@ export default function ThreeDArchitecture() {
   const statsRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const portfolioRef = useRef<HTMLDivElement>(null);
+
+  const [services, setServices] = useState<Service[]>(defaultServices as any);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await nexus.getServices('3d');
+        if (data && data.length > 0) {
+          setServices(data);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchServices();
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -245,12 +270,12 @@ export default function ThreeDArchitecture() {
                   <div className="service-card-3d group relative p-8 rounded-3xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 hover:border-cyan/50 transition-all duration-500 overflow-hidden">
                     {/* Decorative element */}
                     <div className="absolute top-4 right-4 text-6xl opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-500">
-                      {service.image}
+                      {typeof service.icon === 'string' ? service.icon : '✨'}
                     </div>
 
                     <div className="relative z-10">
                       <div className="w-16 h-16 rounded-2xl bg-cyan/10 flex items-center justify-center text-cyan mb-6 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
-                        {service.icon}
+                        <IconRenderer icon={service.icon} />
                       </div>
 
                       <h3 className="font-display font-bold text-xl mb-3">{service.title}</h3>

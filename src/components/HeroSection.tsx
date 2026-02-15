@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Zap, Shield, Globe, MessageSquare, Bot } from "lucide-react";
-import { gsap } from "gsap";
+import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import heroPattern from "@/assets/hero-pattern.jpg";
 import { ParallaxLayer } from "./animations/ParallaxContainer";
@@ -17,8 +17,12 @@ const floatingFeatures = [
   { icon: <Globe className="w-5 h-5" />, label: "Global Ready", delay: "400ms" },
 ];
 
+import { useSiteContent } from "@/hooks/useSiteContent";
+
 export const HeroSection = () => {
   const navigate = useNavigate();
+  const { getText } = useSiteContent('home'); // Fetch 'home' group content
+
   const sectionRef = useRef<HTMLElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const subheadlineRef = useRef<HTMLParagraphElement>(null);
@@ -28,6 +32,7 @@ export const HeroSection = () => {
   const statsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // ... GSAP animation code remains same ...
     if (!sectionRef.current) return;
 
     // Use requestAnimationFrame to ensure DOM is ready
@@ -219,7 +224,7 @@ export const HeroSection = () => {
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-sm font-medium mb-8 opacity-0 hover:bg-gold/20 hover:scale-105 transition-all duration-300 cursor-default"
         >
           <Sparkles className="w-4 h-4" />
-          <span>Habesha Futurism • Digital Excellence</span>
+          <span>{getText('hero_badge', 'Habesha Futurism • Digital Excellence')}</span>
         </div>
 
         {/* Headline with character reveal animation */}
@@ -228,12 +233,10 @@ export const HeroSection = () => {
           className="text-5xl md:text-6xl lg:text-8xl font-display font-bold mb-6 leading-tight"
         >
           <div className="text-foreground">
-            <span className="word inline-block">Ancient</span>{' '}
-            <span className="word inline-block">Wisdom</span>
+            <span className="word inline-block">{getText('hero_headline_1', 'Ancient Wisdom')}</span>
           </div>
           <div className="text-gradient-gold text-glow-gold" style={{ color: 'hsl(var(--gold))', WebkitTextFillColor: 'hsl(var(--gold))' }}>
-            <span className="word inline-block">Futuristic</span>{' '}
-            <span className="word inline-block">Technology</span>
+            <span className="word inline-block">{getText('hero_headline_2', 'Futuristic Technology')}</span>
           </div>
         </h1>
 
@@ -242,7 +245,7 @@ export const HeroSection = () => {
           ref={subheadlineRef}
           className="text-xl md:text-2xl max-w-3xl mx-auto mb-12 leading-relaxed text-foreground"
         >
-          We are G-Nexus — Ethiopia's premier digital platform building the future through web, 3D, and AI innovation.
+          {getText('hero_subheadline', "We are G-Nexus — Ethiopia's premier digital platform building the future through web, 3D, and AI innovation.")}
         </p>
 
         {/* Floating Feature Pills */}
@@ -267,7 +270,7 @@ export const HeroSection = () => {
               className="group w-full min-w-[200px]"
               onClick={() => navigate('/contact')}
             >
-              Start Your Project
+              {getText('hero_cta_1', 'Start Your Project')}
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </MagneticButton>
@@ -280,7 +283,7 @@ export const HeroSection = () => {
               onClick={() => navigate('/chat')}
             >
               <MessageSquare className="w-5 h-5 mr-2 text-cyan group-hover:scale-110 transition-transform" />
-              G-Nexus AI
+              G-Nexus Assistant
             </Button>
           </MagneticButton>
 
@@ -303,7 +306,7 @@ export const HeroSection = () => {
               className="group w-full min-w-[200px]"
               onClick={() => navigate('/gnexus')}
             >
-              <span className="group-hover:text-gold transition-colors duration-300">Explore Platform</span>
+              <span className="group-hover:text-gold transition-colors duration-300">{getText('hero_cta_2', 'Explore Platform')}</span>
             </Button>
           </MagneticButton>
         </div>
@@ -314,9 +317,21 @@ export const HeroSection = () => {
           className="grid grid-cols-3 gap-8 mt-24 pt-10 border-t border-border/30 max-w-3xl mx-auto opacity-0"
         >
           {[
-            { value: "50+", label: "Projects Delivered", color: "text-gold" },
-            { value: "2", label: "Expert Founders", color: "text-cyan" },
-            { value: "∞", label: "Possibilities", color: "text-foreground" },
+            {
+              value: getText('hero_stat_1_value', "50+"),
+              label: getText('hero_stat_1_label', "Projects Delivered"),
+              color: "text-gold"
+            },
+            {
+              value: getText('hero_stat_2_value', "2"),
+              label: getText('hero_stat_2_label', "Expert Founders"),
+              color: "text-cyan"
+            },
+            {
+              value: getText('hero_stat_3_value', "∞"),
+              label: getText('hero_stat_3_label', "Possibilities"),
+              color: "text-foreground"
+            },
           ].map((stat) => (
             <div key={stat.label} className="group cursor-default">
               <div className={`stat-value text-4xl md:text-5xl font-display font-bold ${stat.color} mb-2 group-hover:scale-110 transition-transform duration-300`}>

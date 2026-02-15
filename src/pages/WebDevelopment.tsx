@@ -1,12 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { PageHero } from "@/components/PageHero";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { Code, Smartphone, Globe, Zap, Database, Shield, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { gsap } from "gsap";
+import gsap from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { nexus, type Service } from '@/lib/api/nexus-core';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -21,32 +22,42 @@ const technologies = [
   { name: "AWS", icon: "☁️" },
 ];
 
-const services = [
+const defaultServices: any[] = [
   {
-    icon: <Globe className="w-8 h-8" />,
+    icon: 'Globe',
     title: "Custom Web Applications",
     description: "Tailored solutions built from scratch to meet your unique business requirements with scalable architecture.",
     features: ["Custom UI/UX Design", "API Development", "Third-party Integrations", "Performance Optimization"],
   },
   {
-    icon: <Smartphone className="w-8 h-8" />,
+    icon: 'Smartphone',
     title: "Progressive Web Apps",
     description: "Native-like experiences that work offline, load instantly, and engage users across all devices.",
     features: ["Offline Functionality", "Push Notifications", "App-like Interface", "Cross-platform"],
   },
   {
-    icon: <Database className="w-8 h-8" />,
+    icon: 'Database',
     title: "SaaS Development",
     description: "End-to-end SaaS platforms with subscription management, multi-tenancy, and analytics dashboards.",
     features: ["Multi-tenant Architecture", "Subscription Billing", "Admin Dashboards", "Analytics Integration"],
   },
   {
-    icon: <Shield className="w-8 h-8" />,
+    icon: 'Shield',
     title: "E-commerce Solutions",
     description: "Secure online stores with Telebirr, Chapa, and international payment gateway integrations.",
     features: ["Telebirr Integration", "Inventory Management", "Order Tracking", "Customer Analytics"],
   },
 ];
+
+const IconRenderer = ({ icon }: { icon: string | React.ReactNode }) => {
+  if (typeof icon !== 'string') return <>{icon}</>;
+  // Check if it's likely an emoji (simple check) or just render as text if not found in map
+  const icons: any = { Globe, Smartphone, Database, Shield, Zap, Code };
+  const IconComponent = icons[icon];
+
+  if (IconComponent) return <IconComponent className="w-8 h-8" />;
+  return <span className="text-3xl">{icon}</span>; // Fallback for emojis or unknown icons
+}
 
 const process = [
   { step: "01", title: "Discovery", description: "We dive deep into your business goals and technical requirements." },
@@ -62,6 +73,22 @@ export default function WebDevelopment() {
   const servicesRef = useRef<HTMLDivElement>(null);
   const processRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<SVGSVGElement>(null);
+
+  const [services, setServices] = useState<Service[]>(defaultServices as any);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await nexus.getServices('web'); // Fetch 'web' category services
+        if (data && data.length > 0) {
+          setServices(data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch services, using default.", e);
+      }
+    };
+    fetchServices();
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -149,7 +176,14 @@ export default function WebDevelopment() {
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, []); // Run animation logic even if services update? Maybe add services dependency if cards are dynamic? 
+  // Adding services to dependency might re-trigger animations which is good.
+
+  // Actually, we should split the GSAP logic. Static parts vs Dynamic parts. 
+  // For simplicity, let's keep it empty `[]` or add `services` if we want re-animation.
+  // We'll keep it empty for now as animations might break if re-initialized weirdly.
+  // Actually, wait, if services fetch later, the `serviceCards` selector won't find elements initially if they are not rendered yet?
+  // But we have default services, so they are always rendered. So it's fine.
 
   return (
     <div ref={containerRef}>
@@ -212,7 +246,7 @@ export default function WebDevelopment() {
 
                     <div className="relative z-10">
                       <div className="w-16 h-16 rounded-2xl bg-gold/10 flex items-center justify-center text-gold mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                        {service.icon}
+                        <IconRenderer icon={service.icon} />
                       </div>
 
                       <h3 className="font-display font-bold text-xl mb-3">{service.title}</h3>

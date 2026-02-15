@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Code, Palette, Brain, LayoutGrid, ArrowRight, Sparkles } from "lucide-react";
-import { gsap } from "gsap";
+import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Link } from "react-router-dom";
 import { FadeReveal, ScaleReveal } from "./animations/TextReveal";

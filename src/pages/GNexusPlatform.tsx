@@ -5,7 +5,7 @@ import { AnimatedSection } from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Users, Package, CreditCard, Globe, Bot, BarChart3, ArrowRight, Check, Sparkles, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { gsap } from "gsap";
+import gsap from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);

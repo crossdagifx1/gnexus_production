@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { gsap } from 'gsap';
+import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -116,11 +116,10 @@ export const SectionProgress = ({
           className="group relative flex items-center gap-3"
         >
           <span
-            className={`absolute right-full mr-3 px-2 py-1 rounded text-xs whitespace-nowrap transition-all duration-300 ${
-              activeSection === index
+            className={`absolute right-full mr-3 px-2 py-1 rounded text-xs whitespace-nowrap transition-all duration-300 ${activeSection === index
                 ? 'opacity-100 translate-x-0'
                 : 'opacity-0 translate-x-2'
-            }`}
+              }`}
             style={{
               background: 'hsl(var(--muted))',
               color: 'hsl(var(--foreground))',
@@ -129,11 +128,10 @@ export const SectionProgress = ({
             {section}
           </span>
           <span
-            className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${
-              activeSection === index
+            className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${activeSection === index
                 ? 'scale-125 border-gold bg-gold'
                 : 'border-muted-foreground group-hover:border-gold'
-            }`}
+              }`}
           />
         </button>
       ))}

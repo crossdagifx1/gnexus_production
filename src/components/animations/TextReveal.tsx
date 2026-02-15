@@ -1,5 +1,5 @@
 import { useEffect, useRef, ReactNode } from 'react';
-import { gsap } from 'gsap';
+import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -30,12 +30,12 @@ export const TextReveal = ({
 
   useEffect(() => {
     if (!containerRef.current || hasAnimated.current) return;
-    
+
     const element = containerRef.current;
     const text = element.textContent || '';
-    
+
     let items: string[] = [];
-    
+
     switch (type) {
       case 'chars':
         items = text.split('');
@@ -57,7 +57,7 @@ export const TextReveal = ({
       .join('');
 
     const innerElements = element.querySelectorAll('.gsap-word');
-    
+
     // Animation configurations
     const animations = {
       slideUp: {

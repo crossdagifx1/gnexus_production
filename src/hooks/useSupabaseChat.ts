@@ -1,9 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { type ModelKey } from '@/lib/ai';
 import { toast } from 'sonner';
 
-// Define types locally since we are using a custom migration
+// Generate a local user ID for anonymous use
+const getLocalUserId = () => {
+    let userId = localStorage.getItem('gnexus_local_user_id');
+    if (!userId) {
+        userId = 'local_' + crypto.randomUUID();
+        localStorage.setItem('gnexus_local_user_id', userId);
+    }
+    return userId;
+};
+
 export interface ChatSession {
     id: string;
     title: string;
@@ -30,81 +39,65 @@ export function useSupabaseChat() {
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
+    const initialized = useRef(false);
 
-    // Get current user
+    // Get or create local user ID
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user) setUserId(user.id);
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUserId(session?.user?.id || null);
-        });
-
-        return () => subscription.unsubscribe();
+        const localUserId = getLocalUserId();
+        setUserId(localUserId);
+        initialized.current = true;
     }, []);
 
     // Fetch sessions
     const fetchSessions = useCallback(async () => {
-        if (!userId) return;
+        if (!userId || !initialized.current) return;
 
-        const { data, error } = await supabase
-            .from('ai_conversations')
-            .select('*')
-            .order('pinned', { ascending: false })
-            .order('updated_at', { ascending: false });
+        try {
+            const { data, error } = await supabase
+                .from('ai_conversations')
+                .select('*')
+                .eq('user_id', userId)
+                .order('pinned', { ascending: false })
+                .order('updated_at', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching sessions:', error);
-            toast.error(`Failed to load chat history: ${error.message}`);
-            return;
+            if (error) {
+                // Table might not exist yet, silently fail
+                console.warn('Could not fetch sessions:', error.message);
+                return;
+            }
+
+            setSessions(data as unknown as ChatSession[]);
+        } catch (err) {
+            console.warn('Error fetching sessions:', err);
         }
-
-        // Cast to unknown first to avoid type mismatch if the type isn't perfectly aligned with auto-generated ones yet
-        setSessions(data as unknown as ChatSession[]);
     }, [userId]);
 
-    // Initial fetch and realtime subscription for sessions
+    // Initial fetch
     useEffect(() => {
-        if (!userId) return;
-
-        fetchSessions();
-
-        const channel = supabase
-            .channel('ai_conversations_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'ai_conversations',
-                    filter: `user_id=eq.${userId}`,
-                },
-                () => {
-                    fetchSessions();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        if (userId && initialized.current) {
+            fetchSessions();
+        }
     }, [userId, fetchSessions]);
 
     // Fetch messages for active session
     const fetchMessages = useCallback(async (sessionId: string) => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('ai_messages')
-            .select('*')
-            .eq('conversation_id', sessionId)
-            .order('created_at', { ascending: true });
+        try {
+            const { data, error } = await supabase
+                .from('ai_messages')
+                .select('*')
+                .eq('conversation_id', sessionId)
+                .order('created_at', { ascending: true });
 
-        if (error) {
-            console.error('Error fetching messages:', error);
-            toast.error('Failed to load messages');
-        } else {
-            setMessages(data as unknown as ChatMessage[]);
+            if (error) {
+                console.warn('Could not fetch messages:', error.message);
+                setMessages([]);
+            } else {
+                setMessages(data as unknown as ChatMessage[]);
+            }
+        } catch (err) {
+            console.warn('Error fetching messages:', err);
+            setMessages([]);
         }
         setLoading(false);
     }, []);
@@ -113,31 +106,6 @@ export function useSupabaseChat() {
     useEffect(() => {
         if (activeSessionId) {
             fetchMessages(activeSessionId);
-
-            // Subscribe to new messages
-            const channel = supabase
-                .channel(`ai_messages:${activeSessionId}`)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'ai_messages',
-                        filter: `conversation_id=eq.${activeSessionId}`,
-                    },
-                    (payload) => {
-                        const newMsg = payload.new as unknown as ChatMessage;
-                        setMessages((prev) => {
-                            if (prev.some(m => m.id === newMsg.id)) return prev;
-                            return [...prev, newMsg];
-                        });
-                    }
-                )
-                .subscribe();
-
-            return () => {
-                supabase.removeChannel(channel);
-            };
         } else {
             setMessages([]);
         }
@@ -145,94 +113,116 @@ export function useSupabaseChat() {
 
     // Actions
     const createSession = async (model: ModelKey, title: string = 'New Chat') => {
-        if (!userId) {
-            toast.error('You must be logged in to create a chat');
+        const currentUserId = userId || getLocalUserId();
+
+        try {
+            const { data, error } = await supabase
+                .from('ai_conversations')
+                .insert({
+                    user_id: currentUserId,
+                    title,
+                    model,
+                    pinned: false
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error creating session:', error);
+                toast.error(`Failed to create chat: ${error.message}`);
+                return null;
+            }
+
+            const newSession = data as unknown as ChatSession;
+            setSessions(prev => [newSession, ...prev]);
+            setActiveSessionId(newSession.id);
+            return newSession;
+        } catch (err) {
+            console.error('Error creating session:', err);
+            toast.error('Failed to create chat');
             return null;
         }
-
-        const { data, error } = await supabase
-            .from('ai_conversations')
-            .insert({
-                user_id: userId,
-                title,
-                model,
-                pinned: false
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error creating session:', error);
-            toast.error(`Failed to create new chat: ${error.message}`);
-            return null;
-        }
-
-        const newSession = data as unknown as ChatSession;
-        // Optimistic update handled by realtime subscription usually, but we can set it immediately for responsiveness
-        setActiveSessionId(newSession.id);
-        return newSession;
     };
 
     const deleteSession = async (id: string) => {
-        const { error } = await supabase
-            .from('ai_conversations')
-            .delete()
-            .eq('id', id);
+        try {
+            const { error } = await supabase
+                .from('ai_conversations')
+                .delete()
+                .eq('id', id);
 
-        if (error) {
-            toast.error('Failed to delete chat');
+            if (error) {
+                toast.error('Failed to delete chat');
+                return false;
+            }
+
+            setSessions(prev => prev.filter(s => s.id !== id));
+            if (activeSessionId === id) {
+                setActiveSessionId(null);
+            }
+            return true;
+        } catch (err) {
+            console.error('Error deleting session:', err);
             return false;
         }
-
-        if (activeSessionId === id) {
-            setActiveSessionId(null);
-        }
-        return true;
     };
 
     const updateSession = async (id: string, updates: Partial<ChatSession>) => {
-        const { error } = await supabase
-            .from('ai_conversations')
-            .update(updates)
-            .eq('id', id);
+        try {
+            const { error } = await supabase
+                .from('ai_conversations')
+                .update(updates)
+                .eq('id', id);
 
-        if (error) {
-            toast.error('Failed to update chat');
+            if (error) {
+                toast.error('Failed to update chat');
+                return false;
+            }
+
+            setSessions(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+            return true;
+        } catch (err) {
+            console.error('Error updating session:', err);
             return false;
         }
-        return true;
     };
 
     const addMessage = async (sessionId: string, role: 'user' | 'assistant', content: string, model?: string) => {
-        // Optimistic UI update could be done here, but we rely on realtime for now or local state in UI
+        try {
+            const { data, error } = await supabase
+                .from('ai_messages')
+                .insert({
+                    conversation_id: sessionId,
+                    role,
+                    content,
+                    model
+                })
+                .select()
+                .single();
 
-        const { data, error } = await supabase
-            .from('ai_messages')
-            .insert({
-                conversation_id: sessionId,
-                role,
-                content,
-                model
-            })
-            .select()
-            .single();
+            if (error) {
+                console.error('Error sending message:', error);
+                toast.error('Failed to save message');
+                return null;
+            }
 
-        if (error) {
-            console.error('Error sending message:', error);
-            toast.error('Failed to save message');
+            const newMessage = data as unknown as ChatMessage;
+            setMessages(prev => [...prev, newMessage]);
+
+            // Update conversation's last_message
+            await supabase
+                .from('ai_conversations')
+                .update({
+                    last_message: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', sessionId);
+
+            return newMessage;
+        } catch (err) {
+            console.error('Error adding message:', err);
             return null;
         }
-
-        // Also update the last_message field of the conversation
-        await supabase
-            .from('ai_conversations')
-            .update({
-                last_message: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', sessionId);
-
-        return data as unknown as ChatMessage;
     };
 
     return {
@@ -246,6 +236,6 @@ export function useSupabaseChat() {
         deleteSession,
         updateSession,
         addMessage,
-        setMessages // exposed for optimistic updates if needed
+        setMessages
     };
 }

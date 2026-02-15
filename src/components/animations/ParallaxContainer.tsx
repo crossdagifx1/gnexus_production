@@ -1,5 +1,5 @@
 import { useEffect, useRef, ReactNode } from 'react';
-import { gsap } from 'gsap';
+import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -25,7 +25,7 @@ export const ParallaxContainer = ({
 
     const ctx = gsap.context(() => {
       const movement = speed * 100;
-      
+
       gsap.fromTo(
         contentRef.current,
         {
@@ -91,12 +91,12 @@ export const ParallaxLayer = ({
 
       tl.fromTo(
         layerRef.current,
-        { 
+        {
           yPercent: -speed * 50,
           ...(opacity && { opacity: 0.3 }),
           ...(scale && { scale: 1.2 }),
         },
-        { 
+        {
           yPercent: speed * 50,
           ...(opacity && { opacity: 1 }),
           ...(scale && { scale: 1 }),

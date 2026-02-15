@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { nexus } from '@/lib/api/nexus-core';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -19,24 +19,9 @@ const Auth = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Get return URL from location state or default to /chat
-  const from = (location.state as any)?.from?.pathname || '/chat';
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        navigate(from, { replace: true });
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        navigate(from, { replace: true });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, from]);
+  // Get return URL from location state or default to /admin
+  // Changed default to /admin since /chat is likely not the main target for this auth
+  const from = (location.state as any)?.from?.pathname || '/admin';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,49 +48,46 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
+        // Nexus Core Login
+        await nexus.login(email, password);
 
         toast({
           title: "Welcome back!",
           description: "You've successfully signed in.",
         });
+
+        // Redirect
+        navigate(from, { replace: true });
+
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/chat`,
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
+        // Nexus Core First Admin Registration
+        try {
+          await nexus.registerFirstAdmin(email, password, fullName);
 
-        if (error) throw error;
+          toast({
+            title: "Admin Account Created!",
+            description: "You can now sign in.",
+          });
+          setIsLogin(true);
 
-        toast({
-          title: "Account created!",
-          description: "You can now sign in to your account.",
-        });
-        setIsLogin(true);
+        } catch (error: any) {
+          if (error.message.includes('Setup already completed')) {
+            toast({
+              title: "Setup Unavailable",
+              description: "System setup is already complete. Please sign in or contact an administrator.",
+              variant: "destructive",
+            });
+            setIsLogin(true);
+          } else {
+            throw error;
+          }
+        }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      let message = error.message;
-
-      if (error.message.includes('User already registered')) {
-        message = 'This email is already registered. Please sign in instead.';
-        setIsLogin(true);
-      }
-
       toast({
         title: "Authentication error",
-        description: message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -130,11 +112,11 @@ const Auth = () => {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
-              <span className="text-2xl font-bold text-primary-foreground">G</span>
+              <span className="text-2xl font-bold text-primary-foreground">N</span>
             </div>
-            <h1 className="text-2xl font-bold">G-Squad Admin</h1>
+            <h1 className="text-2xl font-bold">Nexus Core</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {isLogin ? 'Sign in to access the admin portal' : 'Create an admin account'}
+              {isLogin ? 'Sign in to access the admin portal' : 'Initialize System Admin'}
             </p>
           </div>
 
@@ -152,6 +134,7 @@ const Auth = () => {
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Your full name"
                     className="pl-10"
+                    required={!isLogin}
                   />
                 </div>
               </div>
@@ -166,8 +149,9 @@ const Auth = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@g-squad.dev"
+                  placeholder="admin@example.com"
                   className="pl-10"
+                  required
                 />
               </div>
             </div>
@@ -183,6 +167,7 @@ const Auth = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="pl-10 pr-10"
+                  required
                 />
                 <button
                   type="button"
@@ -199,7 +184,7 @@ const Auth = () => {
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  {isLogin ? 'Sign In' : 'Create Account'}
+                  {isLogin ? 'Sign In' : 'Create Super Admin'}
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </>
               )}
@@ -209,13 +194,13 @@ const Auth = () => {
           {/* Toggle */}
           <div className="mt-6 text-center text-sm">
             <span className="text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
+              {isLogin ? "First time setup?" : "Already initialized?"}
             </span>
             <button
               onClick={() => setIsLogin(!isLogin)}
               className="ml-1 text-primary hover:underline font-medium"
             >
-              {isLogin ? 'Sign up' : 'Sign in'}
+              {isLogin ? 'Initialize System' : 'Sign in'}
             </button>
           </div>
 

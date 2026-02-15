@@ -1,45 +1,54 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { PageHero } from "@/components/PageHero";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { Bot, MessageSquare, Workflow, Brain, Sparkles, ArrowRight, Zap, Clock, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
-import { gsap } from "gsap";
+import gsap from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { nexus, type Service } from '@/lib/api/nexus-core';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const solutions = [
+const defaultServices: any[] = [
   {
-    icon: <Bot className="w-8 h-8" />,
+    icon: 'Bot',
     title: "Custom AI Agents",
     description: "Intelligent assistants that understand your business context and automate complex workflows.",
-    benefits: ["24/7 Customer Support", "Lead Qualification", "Data Processing", "Task Automation"],
+    features: ["24/7 Customer Support", "Lead Qualification", "Data Processing", "Task Automation"],
     color: "gold",
   },
   {
-    icon: <MessageSquare className="w-8 h-8" />,
+    icon: 'MessageSquare',
     title: "Telegram Bots",
     description: "Powerful Telegram bots for customer engagement, notifications, and business operations.",
-    benefits: ["Order Management", "Appointment Booking", "FAQ Automation", "Payment Integration"],
+    features: ["Order Management", "Appointment Booking", "FAQ Automation", "Payment Integration"],
     color: "cyan",
   },
   {
-    icon: <Workflow className="w-8 h-8" />,
+    icon: 'Workflow',
     title: "Process Automation",
     description: "End-to-end automation of repetitive business processes using AI-powered workflows.",
-    benefits: ["Invoice Processing", "Report Generation", "Email Automation", "Data Sync"],
+    features: ["Invoice Processing", "Report Generation", "Email Automation", "Data Sync"],
     color: "gold",
   },
   {
-    icon: <Brain className="w-8 h-8" />,
+    icon: 'Brain',
     title: "AI Integration",
     description: "Seamlessly integrate Gemini, GPT, and other AI models into your existing systems.",
-    benefits: ["Custom LLM Solutions", "RAG Systems", "Vision AI", "Voice AI"],
+    features: ["Custom LLM Solutions", "RAG Systems", "Vision AI", "Voice AI"],
     color: "cyan",
   },
 ];
+
+const IconRenderer = ({ icon }: { icon: string | React.ReactNode }) => {
+  if (typeof icon !== 'string') return <>{icon}</>;
+  const icons: any = { Bot, MessageSquare, Workflow, Brain };
+  const IconComponent = icons[icon];
+  if (IconComponent) return <IconComponent className="w-8 h-8" />;
+  return <span className="text-3xl">{icon}</span>;
+}
 
 const useCases = [
   {
@@ -82,6 +91,22 @@ export default function AIAutomation() {
   const useCasesRef = useRef<HTMLDivElement>(null);
   const techRef = useRef<HTMLDivElement>(null);
   const ctaBotRef = useRef<SVGSVGElement>(null);
+
+  const [solutions, setSolutions] = useState<Service[]>(defaultServices as any);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await nexus.getServices('ai');
+        if (data && data.length > 0) {
+          setSolutions(data);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchServices();
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -247,34 +272,39 @@ export default function AIAutomation() {
             </AnimatedSection>
 
             <div className="grid md:grid-cols-2 gap-8">
-              {solutions.map((solution, index) => (
-                <AnimatedSection key={solution.title} delay={index * 100} animation="fadeUp">
-                  <div className="solution-card group relative h-full p-8 rounded-3xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 hover:border-gold/50 transition-all duration-500">
-                    {/* Animated background */}
-                    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${solution.color === 'gold' ? 'from-gold/5 to-transparent' : 'from-cyan/5 to-transparent'} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              {solutions.map((solution, index) => {
+                // Determine color based on index if not set (DB service doesn't have color)
+                const color = (solution as any).color || (index % 2 === 0 ? 'gold' : 'cyan');
 
-                    <div className="relative z-10">
-                      <div className={`w-16 h-16 rounded-2xl ${solution.color === 'gold' ? 'bg-gold/10 text-gold' : 'bg-cyan/10 text-cyan'} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                        {solution.icon}
-                      </div>
+                return (
+                  <AnimatedSection key={solution.title} delay={index * 100} animation="fadeUp">
+                    <div className="solution-card group relative h-full p-8 rounded-3xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 hover:border-gold/50 transition-all duration-500">
+                      {/* Animated background */}
+                      <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${color === 'gold' ? 'from-gold/5 to-transparent' : 'from-cyan/5 to-transparent'} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
 
-                      <h3 className="font-display font-bold text-xl mb-3">{solution.title}</h3>
-                      <p className="text-muted-foreground mb-6">{solution.description}</p>
+                      <div className="relative z-10">
+                        <div className={`w-16 h-16 rounded-2xl ${color === 'gold' ? 'bg-gold/10 text-gold' : 'bg-cyan/10 text-cyan'} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                          <IconRenderer icon={solution.icon} />
+                        </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {solution.benefits.map((benefit) => (
-                          <span
-                            key={benefit}
-                            className={`px-3 py-1 text-xs rounded-full ${solution.color === 'gold' ? 'bg-gold/10 text-gold' : 'bg-cyan/10 text-cyan'}`}
-                          >
-                            {benefit}
-                          </span>
-                        ))}
+                        <h3 className="font-display font-bold text-xl mb-3">{solution.title}</h3>
+                        <p className="text-muted-foreground mb-6">{solution.description}</p>
+
+                        <div className="flex flex-wrap gap-2">
+                          {solution.features?.map((benefit) => (
+                            <span
+                              key={benefit}
+                              className={`px-3 py-1 text-xs rounded-full ${color === 'gold' ? 'bg-gold/10 text-gold' : 'bg-cyan/10 text-cyan'}`}
+                            >
+                              {benefit}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </AnimatedSection>
-              ))}
+                  </AnimatedSection>
+                )
+              })}
             </div>
           </div>
         </section>

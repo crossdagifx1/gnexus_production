@@ -1,11 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { PageLayout } from '@/components/PageLayout';
-import { PageHero } from '@/components/PageHero';
 import PortfolioGallery from '@/components/portfolio/PortfolioGallery';
 import { AnimatedSection } from '@/components/AnimatedSection';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { Badge, Button, GradientText, StatCard } from '@/components/ui';
+import { ArrowRight, Sparkles, Target, Users, Award, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -39,33 +37,58 @@ const Portfolio = () => {
 
   return (
     <PageLayout>
+      {/* Custom Hero with Gradient Text */}
+      <section className="relative py-20 px-6 border-b border-border/30 overflow-hidden">
+        <div className="absolute inset-0 gradient-mesh opacity-30" />
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <Badge variant="gold" className="mb-4">
+            Our Work
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            <GradientText from="gold" to="cyan" animated as="h1">
+              Crafting Digital Excellence
+            </GradientText>
+          </h1>
+          <p className="text-xl text-text-secondary max-w-2xl mx-auto">
+            Explore our portfolio of innovative projects that have transformed Ethiopian businesses through cutting-edge web development, stunning 3D visualization, and intelligent AI solutions.
+          </p>
+        </div>
+      </section>
 
-      <PageHero
-        badge="Our Work"
-        title="Crafting Digital Excellence"
-        subtitle="Explore our portfolio of innovative projects that have transformed Ethiopian businesses through cutting-edge web development, stunning 3D visualization, and intelligent AI solutions."
-      />
-
-      {/* Stats Section */}
+      {/* Stats Section with StatCard */}
       <section className="py-16 border-b border-border">
         <div className="container mx-auto px-4">
-          <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { number: 150, suffix: '+', label: 'Projects Completed' },
-              { number: 50, suffix: '+', label: 'Happy Clients' },
-              { number: 98, suffix: '%', label: 'Client Satisfaction' },
-              { number: 5, suffix: '+', label: 'Years Experience' },
-            ].map((stat, index) => (
-              <AnimatedSection key={index} animation="scaleUp" delay={index * 100}>
-                <div className="p-6 bg-card rounded-2xl border border-border">
-                  <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
-                    <span className="stat-number" data-target={stat.number}>0</span>
-                    {stat.suffix}
-                  </div>
-                  <p className="text-muted-foreground text-sm">{stat.label}</p>
-                </div>
-              </AnimatedSection>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <StatCard
+              label="Projects Completed"
+              value="150+"
+              variant="gold"
+              icon={<Target className="w-6 h-6" />}
+              animated
+            />
+            <StatCard
+              label="Happy Clients"
+              value="50+"
+              variant="cyan"
+              icon={<Users className="w-6 h-6" />}
+              animated
+            />
+            <StatCard
+              label="Client Satisfaction"
+              value="98%"
+              change={2.5}
+              trend="up"
+              variant="success"
+              icon={<Award className="w-6 h-6" />}
+              animated
+            />
+            <StatCard
+              label="Years Experience"
+              value="5+"
+              variant="gold"
+              icon={<TrendingUp className="w-6 h-6" />}
+              animated
+            />
           </div>
         </div>
       </section>
@@ -77,8 +100,8 @@ const Portfolio = () => {
             <Badge variant="outline" className="mb-4">
               <Sparkles className="w-3 h-3 mr-1" /> Featured Work
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Projects That Drive Results
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Projects That <GradientText from="gold" to="cyan">Drive Results</GradientText>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               From e-commerce platforms to architectural visualizations, each project is crafted with precision and purpose.
@@ -93,8 +116,8 @@ const Portfolio = () => {
       <section className="py-20 bg-primary/5">
         <div className="container mx-auto px-4">
           <AnimatedSection animation="fadeUp" className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to Start Your Project?
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Ready to <GradientText from="gold" to="cyan">Transform</GradientText> Your Business?
             </h2>
             <p className="text-muted-foreground mb-8">
               Let's create something amazing together. Whether you need a website, 3D visualization, or AI solution, we're here to help bring your vision to life.

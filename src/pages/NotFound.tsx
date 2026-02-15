@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
+import gsap from 'gsap';
 
 const NotFound = () => {
   const location = useLocation();

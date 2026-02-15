@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Sparkles, Github, Linkedin, Twitter, Instagram } from "lucide-react";
 import { Link } from "react-router-dom";
-import { gsap } from "gsap";
+import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);

@@ -30,11 +30,14 @@ import { toast } from 'sonner';
 import { useWorkflowStore } from '@/stores/workflowStore';
 import { useDynamicWorkflow } from '@/hooks/useWorkflowExecutor';
 
-// Node Components
 import DynamicInputNode from './nodes/DynamicInputNode';
 import ResearchNode from './nodes/ResearchNode';
 import CollaboratorNode from './nodes/CollaboratorNode';
 import PreviewNode from './nodes/PreviewNode';
+import WebSearchNode from './nodes/WebSearchNode';
+import CalculatorNode from './nodes/CalculatorNode';
+import ApiCallerNode from './nodes/ApiCallerNode';
+import CodeAnalyzerNode from './nodes/CodeAnalyzerNode';
 
 // =============================================================================
 // NODE & EDGE TYPES
@@ -46,6 +49,14 @@ const nodeTypes = {
     'inputNode': DynamicInputNode,
     research: ResearchNode,
     'researchNode': ResearchNode,
+    'web-search': WebSearchNode,
+    'webSearchNode': WebSearchNode,
+    calculator: CalculatorNode,
+    'calculatorNode': CalculatorNode,
+    'api-caller': ApiCallerNode,
+    'apiCallerNode': ApiCallerNode,
+    'code-analyzer': CodeAnalyzerNode,
+    'codeAnalyzerNode': CodeAnalyzerNode,
     collaborator: CollaboratorNode,
     'collaboratorNode': CollaboratorNode,
     preview: PreviewNode,
@@ -218,6 +229,22 @@ function WorkflowCanvasContent() {
                         <div className="flex items-center gap-3">
                             <div className="w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/30" />
                             <span className="text-xs text-white/70">Research</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-lg shadow-cyan-500/30" />
+                            <span className="text-xs text-white/70">Web Search</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/30" />
+                            <span className="text-xs text-white/70">Calculator</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/30" />
+                            <span className="text-xs text-white/70">API Caller</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/30" />
+                            <span className="text-xs text-white/70">Code Analyzer</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-3 h-3 rounded-full bg-purple-500 shadow-lg shadow-purple-500/30" />

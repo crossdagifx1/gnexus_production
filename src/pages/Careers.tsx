@@ -1,16 +1,15 @@
 import { useEffect, useRef } from "react";
 import { PageLayout } from "@/components/PageLayout";
-import { PageHero } from "@/components/PageHero";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { FloatingParticles } from "@/components/FloatingParticles";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-import { Button } from "@/components/ui/button";
+import { Button, Badge, GradientText, InteractiveCard, StatCard, Tag, Timeline } from "@/components/ui";
 import { Rocket, Heart, Coffee, Globe, Zap, BookOpen, Users, Clock, MapPin, Briefcase, GraduationCap, Wifi, Dumbbell, Plane, DollarSign, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { CategoryTabs } from "@/components/CategoryTabs";
-import { gsap } from "gsap";
+import gsap from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -72,30 +71,31 @@ export default function Careers() {
 
   return (
     <PageLayout>
-      <PageHero
-        badge="🚀 Careers"
-        title="Join the Squad"
-        subtitle="Help us build Ethiopia's digital future. We're looking for passionate builders who want to make an impact."
-      />
+      {/* Custom Hero with Gradient Text */}
+      <section className="relative py-20 px-6 border-b border-border/30 overflow-hidden">
+        <div className="absolute inset-0 gradient-mesh opacity-30" />
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <Badge variant="gold" className="mb-4">
+            🚀 Careers
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            <GradientText from="gold" to="cyan" animated as="h1">
+              Join the Squad
+            </GradientText>
+          </h1>
+          <p className="text-xl text-text-secondary max-w-2xl mx-auto">
+            Help us build Ethiopia's digital future. We're looking for passionate builders who want to make an impact.
+          </p>
+        </div>
+      </section>
 
-      {/* Stats */}
-      <section className="py-16 px-6 border-y border-border/30 relative overflow-hidden">
-        <FloatingParticles count={12} color="gold" />
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat, i) => (
-            <AnimatedSection key={stat.label} delay={i * 100} animation="scaleUp">
-              <div className="text-center">
-                <div className="font-display font-bold text-3xl md:text-4xl text-gold mb-1">
-                  {typeof stat.value === "number" && stat.value % 1 === 0 ? (
-                    <AnimatedCounter end={stat.value} suffix={stat.suffix} />
-                  ) : (
-                    <span>{stat.value}{stat.suffix}</span>
-                  )}
-                </div>
-                <p className="text-muted-foreground text-sm">{stat.label}</p>
-              </div>
-            </AnimatedSection>
-          ))}
+      {/* Stats with StatCard */}
+      <section className="py-16 px-6 border-y border-border/30">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+          <StatCard label="Employee Satisfaction" value="95%" variant="success" animated />
+          <StatCard label="Avg. Hiring Time" value="2 weeks" variant="gold" animated />
+          <StatCard label="Glassdoor Rating" value="4.9/5" variant="cyan" animated />
+          <StatCard label="Countries Represented" value="15+" variant="gold" animated />
         </div>
       </section>
 
@@ -109,13 +109,13 @@ export default function Careers() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, i) => (
               <AnimatedSection key={benefit.title} delay={i * 75} animation="fadeUp">
-                <div className="group p-6 rounded-2xl bg-muted/30 border border-border/50 hover:border-gold/50 transition-all hover:-translate-y-1">
-                  <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold mb-4 group-hover:scale-110 transition-transform">
+                <InteractiveCard hover="lift" className="p-6 h-full">
+                  <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold mb-4">
                     {benefit.icon}
                   </div>
                   <h3 className="font-display font-bold mb-2">{benefit.title}</h3>
                   <p className="text-sm text-muted-foreground">{benefit.desc}</p>
-                </div>
+                </InteractiveCard>
               </AnimatedSection>
             ))}
           </div>
@@ -126,7 +126,9 @@ export default function Careers() {
       <section className="py-24 px-6 bg-muted/10">
         <div className="max-w-6xl mx-auto">
           <AnimatedSection>
-            <h2 className="font-display font-bold text-3xl text-center mb-4">Our Culture</h2>
+            <h2 className="font-display font-bold text-3xl md:text-5xl text-center mb-4">
+              Our <GradientText from="gold" to="cyan">Culture</GradientText>
+            </h2>
             <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-12">The principles that guide how we work together.</p>
           </AnimatedSection>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -221,12 +223,12 @@ export default function Careers() {
           <div className="space-y-4">
             {filteredPositions.map((pos, i) => (
               <AnimatedSection key={pos.title} delay={i * 100} animation="fadeUp">
-                <div className="p-6 rounded-2xl bg-card/50 border border-border/50 hover:border-gold/50 transition-all group">
+                <InteractiveCard hover="lift">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-display font-bold text-lg group-hover:text-gold transition-colors">{pos.title}</h3>
-                        <span className="px-2 py-1 text-xs rounded-full bg-gold/10 text-gold">{pos.department}</span>
+                        <h3 className="font-display font-bold text-xl">{pos.title}</h3>
+                        <Tag variant="gold" size="sm">{pos.department}</Tag>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                         <span className="flex items-center gap-1"><Briefcase className="w-4 h-4" /> {pos.type}</span>
@@ -242,12 +244,12 @@ export default function Careers() {
                       </div>
                     </div>
                     <Link to="/contact">
-                      <Button variant="gold" className="group-hover:scale-105 transition-transform">
+                      <Button variant="gold">
                         Apply Now <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
                     </Link>
                   </div>
-                </div>
+                </InteractiveCard>
               </AnimatedSection>
             ))}
           </div>

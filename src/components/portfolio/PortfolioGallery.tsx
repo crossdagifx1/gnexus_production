@@ -1,25 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
+import { nexus, type Project } from '@/lib/api/nexus-core';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  image_url: string;
-  client: string;
-  technologies: string[];
-  project_url: string | null;
-  featured: boolean;
-}
 
 const categories = [
   { id: 'all', label: 'All Projects', icon: '✦' },
@@ -43,11 +31,15 @@ const PortfolioGallery = () => {
 
   useEffect(() => {
     // Clean up any existing ScrollTriggers for cards before creating new ones
-    ScrollTrigger.getAll().forEach(trigger => {
-      if (trigger.vars.trigger && cardsRef.current.includes(trigger.vars.trigger)) {
-        trigger.kill();
-      }
-    });
+
+    // Note: in React 18 strict mode this might double fire, 
+    // but we want to be careful not to kill triggers we just created if this runs twice fast.
+    // Ideally we should keep track of triggers created by this component.
+
+    const triggers = ScrollTrigger.getAll().filter(t =>
+      t.vars.trigger && (cardsRef.current as any[]).includes(t.vars.trigger)
+    );
+    triggers.forEach(t => t.kill());
 
     if (cardsRef.current.length > 0) {
       // Use requestAnimationFrame to ensure DOM is ready
@@ -62,7 +54,8 @@ const PortfolioGallery = () => {
               rotateX: 0,
             });
 
-            // Only animate cards that are below the fold
+            // Only animate cards that are below the fold? 
+            // Actually let's just animate all for now, or use batch.
             gsap.fromTo(card,
               {
                 opacity: 0,
@@ -95,25 +88,17 @@ const PortfolioGallery = () => {
     }
 
     return () => {
-      // Clean up on unmount
-      ScrollTrigger.getAll().forEach(trigger => {
-        if (trigger.vars.trigger && cardsRef.current.includes(trigger.vars.trigger)) {
-          trigger.kill();
-        }
-      });
+      ScrollTrigger.getAll().filter(t =>
+        t.vars.trigger && (cardsRef.current as any[]).includes(t.vars.trigger)
+      ).forEach(t => t.kill());
     };
   }, [projects, activeCategory]);
 
   const fetchProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from('portfolio_projects')
-        .select('*')
-        .order('featured', { ascending: false })
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      setProjects(data || []);
+      // Using Nexus Core SDK
+      const data = await nexus.getProjects();
+      setProjects(data);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -123,7 +108,13 @@ const PortfolioGallery = () => {
 
   const filteredProjects = activeCategory === 'all'
     ? projects
-    : projects.filter(p => p.category === activeCategory);
+    : projects.filter(p => p.category.toLowerCase().includes(activeCategory.toLowerCase()) ||
+      (activeCategory === 'web' && p.category.toLowerCase().includes('web')) ||
+      (activeCategory === '3d' && p.category.toLowerCase().includes('3d')) ||
+      (activeCategory === 'ai' && p.category.toLowerCase().includes('ai'))
+    );
+  // Simplified category matching. Real app might want explicit category mapping in DB or UI.
+  // For now, loose matching is fine.
 
   const openLightbox = (project: Project) => {
     const index = filteredProjects.findIndex(p => p.id === project.id);
@@ -170,8 +161,8 @@ const PortfolioGallery = () => {
             variant={activeCategory === cat.id ? 'default' : 'outline'}
             onClick={() => setActiveCategory(cat.id)}
             className={`group relative overflow-hidden transition-all duration-300 ${activeCategory === cat.id
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                : 'hover:border-primary/50'
+              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+              : 'hover:border-primary/50'
               }`}
           >
             <span className="mr-2">{cat.icon}</span>
@@ -214,18 +205,24 @@ const PortfolioGallery = () => {
               >
                 <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted transform-gpu transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:shadow-primary/20">
                   {/* Image */}
-                  <img
-                    src={project.image_url}
-                    alt={project.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
+                  {project.image_url ? (
+                    <img
+                      src={project.image_url}
+                      alt={project.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-secondary text-muted-foreground">
+                      No Image
+                    </div>
+                  )}
 
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
                     <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="secondary" className="text-xs">
-                          {categories.find(c => c.id === project.category)?.label}
+                          {project.category}
                         </Badge>
                         {project.featured && (
                           <Badge className="bg-primary/20 text-primary text-xs">
@@ -292,18 +289,22 @@ const PortfolioGallery = () => {
               <div className="grid md:grid-cols-2">
                 {/* Image */}
                 <div className="aspect-[4/3] md:aspect-auto">
-                  <img
-                    src={selectedProject.image_url}
-                    alt={selectedProject.title}
-                    className="w-full h-full object-cover"
-                  />
+                  {selectedProject.image_url ? (
+                    <img
+                      src={selectedProject.image_url}
+                      alt={selectedProject.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">No Image</div>
+                  )}
                 </div>
 
                 {/* Details */}
                 <div className="p-8 flex flex-col">
                   <div className="flex items-center gap-2 mb-4">
                     <Badge variant="secondary">
-                      {categories.find(c => c.id === selectedProject.category)?.label}
+                      {selectedProject.category}
                     </Badge>
                     {selectedProject.featured && (
                       <Badge className="bg-primary text-primary-foreground">Featured</Badge>

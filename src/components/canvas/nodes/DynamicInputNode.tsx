@@ -24,7 +24,7 @@ const DynamicInputNode = memo(({ data, selected }: NodeProps<InputNodeType>) => 
 
     const handleSubmit = useCallback(() => {
         if (goal.trim()) {
-            startWorkflow(goal.trim(), branchCount);
+            startWorkflow(goal.trim());
         }
     }, [goal, branchCount, startWorkflow]);
 

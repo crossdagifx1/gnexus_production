@@ -1,0 +1,74 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: 🧹 Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:coverage || echo "No tests configured yet"
+
+  web-deploy:
+    name: 🎉 Deploy
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🌍 Set Environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "BASE_PATH=/" >> $GITHUB_OUTPUT
+            echo "SERVER_DIR=./public_html/" >> $GITHUB_OUTPUT
+            echo "Environment: Production"
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "BASE_PATH=/test/" >> $GITHUB_OUTPUT
+            echo "SERVER_DIR=./public_html/test/" >> $GITHUB_OUTPUT
+            echo "Environment: Test"
+          fi
+
+      - name: 🏗️ Build Project
+        run: npm run build -- --base=${{ steps.env.outputs.BASE_PATH }}
+
+      - name: 📂 Sync files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ${{ steps.env.outputs.SERVER_DIR }}

@@ -12,18 +12,53 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Enhanced variants
+        success: "border-transparent bg-success/20 text-success border-success/30",
+        warning: "border-transparent bg-warning/20 text-warning border-warning/30",
+        error: "border-transparent bg-error/20 text-error border-error/30",
+        info: "border-transparent bg-info/20 text-info border-info/30",
+        gold: "border-transparent bg-gold/20 text-gold border-gold/30",
+        cyan: "border-transparent bg-cyan/20 text-cyan border-cyan/30",
+      },
+      size: {
+        default: "px-2.5 py-0.5 text-xs",
+        sm: "px-2 py-0.5 text-[10px]",
+        lg: "px-3 py-1 text-sm",
       },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   },
 );
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {
+  dot?: boolean;
+  pulse?: boolean;
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+function Badge({ className, variant, size, dot, pulse, ...props }: BadgeProps) {
+  return (
+    <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
+      {dot && (
+        <span
+          className={cn(
+            "mr-1.5 h-2 w-2 rounded-full",
+            pulse && "animate-pulse",
+            variant === "success" && "bg-success",
+            variant === "warning" && "bg-warning",
+            variant === "error" && "bg-error",
+            variant === "info" && "bg-info",
+            variant === "gold" && "bg-gold",
+            variant === "cyan" && "bg-cyan",
+            !variant && "bg-primary"
+          )}
+        />
+      )}
+      {props.children}
+    </div>
+  );
 }
 
 export { Badge, badgeVariants };

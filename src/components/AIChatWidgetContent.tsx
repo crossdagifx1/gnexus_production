@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import {
     X,
     Send,
@@ -11,13 +12,25 @@ import {
     Check,
     Play,
     ArrowDown,
+    MoreHorizontal,
+    Square,
+    Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNexusChat } from '@/hooks/useNexus';
 import { PreviewModal } from '@/components/PreviewModal';
 import { toast } from 'sonner';
-// AdvancedImagePreview import removed
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MessageActionMenu } from '@/components/chat/MessageActionMenu';
+import { QuickActionToolbar } from '@/components/chat/QuickActionToolbar';
+import { textToSpeech } from '@/lib/ai';
+import { FileUpload } from '@/components/input/FileUpload';
+import { ResultRenderer } from '@/components/output/ResultRenderer';
+import { InputData, AnalysisResult } from '@/components/input/types';
+import { AI_MODELS, ModelKey } from '@/lib/ai';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 // =============================================================================
 // SUB-COMPONENTS
@@ -94,16 +107,22 @@ const CodeBlock = ({ code, language, onPreview }: { code: string; language: stri
 export default function AIChatWidgetContent() {
     const [isOpen, setIsOpen] = useState(false);
     const [input, setInput] = useState('');
+    const [attachments, setAttachments] = useState<File[]>([]);
+    const [showFileUpload, setShowFileUpload] = useState(false);
     const [previewData, setPreviewData] = useState<{ code: string; language: string } | null>(null);
+    const [showActionsMenu, setShowActionsMenu] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const {
         messages,
         sendMessage,
+        stopGeneration,
         loading,
         streaming,
-        error
+        error,
+        activeModel,
+        setActiveModel
     } = useNexusChat('planner');
 
     // Handle AI errors
@@ -128,10 +147,20 @@ export default function AIChatWidgetContent() {
     }, [isOpen]);
 
     const handleSend = async () => {
-        if (!input.trim() || loading) return;
+        if ((!input.trim() && attachments.length === 0) || loading) return;
         const msg = input.trim();
+        const currentAttachments = [...attachments];
+
         setInput('');
-        await sendMessage(msg);
+        setAttachments([]);
+        setShowFileUpload(false);
+
+        await sendMessage(msg, currentAttachments);
+    };
+
+    const handleFilesSelected = (files: InputData[]) => {
+        const newFiles = files.map(f => f.content as File);
+        setAttachments(prev => [...prev, ...newFiles]);
     };
 
     const handlePreview = (code: string, language: string) => {
@@ -156,10 +185,41 @@ export default function AIChatWidgetContent() {
         }
     };
 
-
-
-    // Parse message content for code blocks
+    // Parse message content for code blocks and JSON results
     const renderContent = (content: string) => {
+        // Try to parse as JSON for AnalysisResult
+        try {
+            if (content.trim().startsWith('{') && content.trim().endsWith('}')) {
+                const parsed = JSON.parse(content);
+                // Simple heuristic to check if it's an AnalysisResult
+                if (parsed.summary && (parsed.insights || parsed.content)) {
+                    // It looks like an analysis result
+                    const result: AnalysisResult = {
+                        id: `res-${Date.now()}`,
+                        type: 'data_insights', // Default or infer
+                        status: 'completed',
+                        progress: 100,
+                        inputId: 'unknown',
+                        summary: parsed.summary,
+                        content: parsed.content || '',
+                        insights: parsed.insights || [],
+                        data: parsed.data,
+                        visualizations: parsed.visualizations,
+                        recommendations: parsed.recommendations,
+                        metadata: {
+                            processingTime: 0,
+                            modelUsed: 'analyst',
+                            confidence: 0.9,
+                            timestamp: new Date()
+                        }
+                    };
+                    return <ResultRenderer result={result} />;
+                }
+            }
+        } catch (e) {
+            // Not JSON
+        }
+
         // Check if content is a single image URL (including base64 data URLs)
         const isImageUrl = (
             content.startsWith('data:image/') || // Base64 data URL
@@ -248,8 +308,38 @@ export default function AIChatWidgetContent() {
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                                     <Bot className="w-5 h-5 text-white" />
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold text-gray-100 text-sm">G-Nexus Assistant</h3>
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-1">
+                                        <h3 className="font-semibold text-gray-100 text-sm">G-Nexus</h3>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-5 px-1.5 gap-1 text-[10px] text-gray-400 hover:text-white ml-1 bg-white/5 rounded-full border border-white/5 hover:bg-white/10">
+                                                    {AI_MODELS[activeModel]?.name || activeModel}
+                                                    <ChevronDown className="w-2.5 h-2.5" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="start" className="w-[200px] bg-[#1a1a1a] border-white/10">
+                                                {Object.entries(AI_MODELS)
+                                                    .filter(([_, config]) => !config.fallback) // Only show main categories/models
+                                                    .map(([key, config]) => (
+                                                        <DropdownMenuItem
+                                                            key={key}
+                                                            onClick={() => setActiveModel(key as ModelKey)}
+                                                            className={cn(
+                                                                "flex items-center justify-between text-xs cursor-pointer hover:bg-white/5",
+                                                                activeModel === key && "bg-cyan-500/10 text-cyan-400"
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
+                                                                {config.name}
+                                                            </div>
+                                                            {activeModel === key && <Check className="w-3 h-3" />}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
                                     <div className="flex items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                         <span className="text-[10px] text-green-400 font-mono">ONLINE</span>
@@ -276,19 +366,180 @@ export default function AIChatWidgetContent() {
                                         key={msg.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        className={`flex group flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                                     >
                                         <div
                                             className={`
-                                                max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed
+                                                relative max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed
                                                 ${msg.role === 'user'
                                                     ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-sm'
                                                     : 'bg-white/10 text-gray-200 rounded-tl-sm'
                                                 }
                                             `}
                                         >
+                                            {/* Top Corner More Options Button */}
+                                            {msg.role === 'assistant' && (
+                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/5 p-0"
+                                                            >
+                                                                <MoreHorizontal className="w-3 h-3 rotate-90" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-fit p-0 bg-transparent border-none shadow-none" align="end">
+                                                            <MessageActionMenu
+                                                                role={msg.role}
+                                                                modelName={msg.model}
+                                                                onCopy={async () => {
+                                                                    await navigator.clipboard.writeText(msg.content);
+                                                                    toast.success('Copied to clipboard');
+                                                                }}
+                                                                onReadAloud={async () => {
+                                                                    toast.info('Synthesizing speech...');
+                                                                    try {
+                                                                        const response = await textToSpeech(msg.content);
+                                                                        if (response.success && response.data) {
+                                                                            const audio = new Audio(response.data);
+                                                                            audio.play();
+                                                                            toast.success('Playing audio');
+                                                                        }
+                                                                    } catch (err) {
+                                                                        toast.error('Error playing audio');
+                                                                    }
+                                                                }}
+                                                                onFeedback={(type) => {
+                                                                    toast.success('Thanks for your feedback!');
+                                                                }}
+                                                                onRegenerate={() => {
+                                                                    toast.info('Regenerating response...');
+                                                                }}
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
+                                            )}
+
                                             {renderContent(msg.content)}
+
+                                            {/* Corner Copy Button */}
+                                            {msg.role === 'assistant' && (
+                                                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={async () => {
+                                                            await navigator.clipboard.writeText(msg.content);
+                                                            toast.success('Copied to clipboard');
+                                                        }}
+                                                        className="h-6 w-6 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/5 p-0"
+                                                    >
+                                                        <Copy className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {/* Reasoning / Thinking Process */}
+                                        {msg.role === 'assistant' && msg.reasoning && (
+                                            <div className="mt-2 text-xs text-gray-500 max-w-[85%] px-4">
+                                                <details className="cursor-pointer group/details">
+                                                    <summary className="list-none flex items-center gap-1 hover:text-gray-400 transition-colors">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-gray-600 group-hover/details:bg-cyan-500 transition-colors" />
+                                                        Thinking Process
+                                                        <ArrowDown className="w-3 h-3 opacity-0 group-open/details:opacity-100 transition-opacity" />
+                                                    </summary>
+                                                    <div className="mt-2 pl-3 border-l-2 border-white/10 text-gray-400 font-mono text-[10px] leading-relaxed whitespace-pre-wrap">
+                                                        {msg.reasoning}
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        )}
+
+                                        {/* Actions Menu */}
+                                        {
+                                            msg.role !== 'system' && (
+                                                <div className={cn(
+                                                    'absolute bottom-0 translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2',
+                                                    msg.role === 'user' ? 'right-2' : 'left-2'
+                                                )}>
+                                                    <Popover open={showActionsMenu === msg.id} onOpenChange={(open) => setShowActionsMenu(open ? msg.id : null)}>
+                                                        <QuickActionToolbar
+                                                            role={msg.role}
+                                                            content={msg.content}
+                                                            onCopy={async () => {
+                                                                await navigator.clipboard.writeText(msg.content);
+                                                                toast.success('Copied to clipboard');
+                                                            }}
+                                                            onReadAloud={async () => {
+                                                                toast.info('Synthesizing speech...');
+                                                                try {
+                                                                    const response = await textToSpeech(msg.content);
+                                                                    if (response.success && response.data) {
+                                                                        const audio = new Audio(response.data);
+                                                                        audio.play();
+                                                                        toast.success('Playing audio');
+                                                                    }
+                                                                } catch (err) {
+                                                                    toast.error('Error playing audio');
+                                                                }
+                                                            }}
+                                                            onFeedback={(type) => {
+                                                                toast.success('Thanks for your feedback!');
+                                                            }}
+                                                            onRegenerate={msg.role === 'assistant' ? () => {
+                                                                toast.info('Regenerating response...');
+                                                            } : undefined}
+                                                            onMore={() => setShowActionsMenu(msg.id)}
+                                                        />
+
+                                                        <PopoverTrigger asChild>
+                                                            <span className="sr-only">Open menu</span>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-fit p-0 bg-transparent border-none shadow-none" align={msg.role === 'user' ? 'end' : 'start'}>
+                                                            <MessageActionMenu
+                                                                role={msg.role}
+                                                                modelName={msg.model}
+                                                                onCopy={async () => {
+                                                                    await navigator.clipboard.writeText(msg.content);
+                                                                    toast.success('Copied to clipboard');
+                                                                    setShowActionsMenu(null);
+                                                                }}
+                                                                onReadAloud={async () => {
+                                                                    toast.info('Synthesizing speech...');
+                                                                    try {
+                                                                        const response = await textToSpeech(msg.content);
+                                                                        if (response.success && response.data) {
+                                                                            const audio = new Audio(response.data);
+                                                                            audio.play();
+                                                                            toast.success('Playing audio');
+                                                                        }
+                                                                    } catch (err) {
+                                                                        toast.error('Error playing audio');
+                                                                    }
+                                                                    setShowActionsMenu(null);
+                                                                }}
+                                                                onFeedback={(type) => {
+                                                                    toast.success('Thanks for your feedback!');
+                                                                    setShowActionsMenu(null);
+                                                                }}
+                                                                onRegenerate={() => {
+                                                                    toast.info('Regenerating response...');
+                                                                    setShowActionsMenu(null);
+                                                                }}
+                                                                onAnalyze={() => {
+                                                                    toast.info('Analyzing response logic...');
+                                                                    setShowActionsMenu(null);
+                                                                }}
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
+                                            )
+                                        }
                                     </motion.div>
                                 ))}
 
@@ -301,13 +552,72 @@ export default function AIChatWidgetContent() {
                             </div>
                         </ScrollArea>
 
-                        {/* Input Area */}
+                        {/* File Upload Area */}
+                        <AnimatePresence>
+                            {showFileUpload && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="border-t border-white/10 bg-black/20"
+                                >
+                                    <div className="p-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs text-gray-400">Attach Files</span>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowFileUpload(false)}
+                                                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                        <FileUpload
+                                            onFilesSelected={handleFilesSelected}
+                                            config={{ maxFileSize: 10 * 1024 * 1024 }}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Selected Files Preview (Compact) */}
+                        {attachments.length > 0 && !showFileUpload && (
+                            <div className="px-3 py-2 border-t border-white/10 bg-black/20 flex gap-2 overflow-x-auto">
+                                {attachments.map((file, i) => (
+                                    <div key={i} className="flex items-center gap-2 bg-white/10 px-2 py-1 rounded text-xs text-gray-300 shrink-0">
+                                        <span className="truncate max-w-[100px]">{file.name}</span>
+                                        <button
+                                            onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+                                            className="hover:text-white"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => setShowFileUpload(true)}
+                                    className="flex items-center gap-1 bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded text-xs hover:bg-cyan-500/30"
+                                >
+                                    <Plus className="w-3 h-3" /> Add
+                                </button>
+                            </div>
+                        )}
+
                         <div className="p-3 border-t border-white/10 bg-black/20 shrink-0">
                             <form
                                 onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                                 className="relative flex items-center gap-2"
                             >
-                                <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-white shrink-0">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-9 w-9 shrink-0 ${showFileUpload || attachments.length > 0 ? 'text-cyan-400 bg-cyan-500/10' : 'text-gray-400 hover:text-white'}`}
+                                    onClick={() => setShowFileUpload(!showFileUpload)}
+                                >
                                     <Paperclip className="w-4 h-4" />
                                 </Button>
 
@@ -320,28 +630,40 @@ export default function AIChatWidgetContent() {
                                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
                                 />
 
-                                <Button
-                                    type="submit"
-                                    disabled={!input.trim() || loading}
-                                    className={`
-                                        h-9 w-9 rounded-xl p-0 shrink-0 transition-all
-                                        ${input.trim()
-                                            ? 'bg-cyan-500 hover:bg-cyan-400 text-white'
-                                            : 'bg-white/5 text-gray-500 hover:bg-white/10'
-                                        }
-                                    `}
-                                >
-                                    <Send className="w-4 h-4" />
-                                </Button>
+                                {loading || streaming ? (
+                                    <Button
+                                        type="button"
+                                        onClick={stopGeneration}
+                                        className="h-9 w-9 rounded-xl p-0 shrink-0 bg-white/10 hover:bg-white/20 text-white transition-all border border-white/10"
+                                    >
+                                        <Square className="w-4 h-4 fill-white" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        disabled={(!input.trim() && attachments.length === 0)}
+                                        className={`
+                                            h-9 w-9 rounded-xl p-0 shrink-0 transition-all
+                                            ${(input.trim() || attachments.length > 0)
+                                                ? 'bg-cyan-500 hover:bg-cyan-400 text-white'
+                                                : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                                            }
+                                        `}
+                                    >
+                                        <Send className="w-4 h-4" />
+                                    </Button>
+                                )}
                             </form>
                         </div>
                     </motion.div>
-                )}
+                )
+                }
             </AnimatePresence>
 
             {/* Preview Modal */}
-            <PreviewModal
-                isOpen={!!previewData}
+            < PreviewModal
+                isOpen={!!previewData
+                }
                 onClose={() => setPreviewData(null)}
                 code={previewData?.code || ''}
                 language={previewData?.language || ''}

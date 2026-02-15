@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
 // import App from "./App.tsx";
-import { gsap } from "gsap";
+import gsap from "gsap";
 
 // Configure GSAP to suppress null target warnings
 gsap.config({ nullTargetWarn: false });

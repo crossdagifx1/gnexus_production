@@ -15,22 +15,54 @@ import { Node, Edge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange,
 // =============================================================================
 
 export type NodeStatus = 'idle' | 'waiting' | 'running' | 'completed' | 'failed';
-export type NodeType = 'input' | 'research' | 'collaborator' | 'preview';
+export type NodeType = 'input' | 'research' | 'web-search' | 'calculator' | 'api-caller' | 'code-analyzer' | 'collaborator' | 'preview';
 
 export interface WorkflowNodeData {
     [key: string]: unknown;
-    label: string;
     type: NodeType;
     status: NodeStatus;
+    label?: string;
+    // Input specific
+    goal?: string;
     // Research node specific
     researchType?: string;
     prompt?: string;
     result?: string;
+    // Web search specific
+    query?: string;
+    results?: Array<{ title: string; url: string; snippet: string; score?: number }>;
+    answer?: string;
+    // Calculator specific
+    expression?: string;
+    formatted?: string;
+    steps?: string[];
+    // API Caller specific
+    endpoint?: string;
+    method?: string;
+    data?: any;
+    statusCode?: number;
+    // Code Analyzer specific
+    code?: string;
+    analysis?: {
+        lines: number;
+        functions: number;
+        classes: number;
+        imports: number;
+        complexity?: string;
+        patterns?: string[];
+        suggestions?: string[];
+    };
     // Collaborator specific
     conflictResolutions?: Array<{ conflict: string; decision: string; reason: string }>;
-    unifiedBlueprint?: Record<string, unknown>;
+    unifiedBlueprint?: string;
     // Preview specific
     htmlCode?: string;
+    generatedFiles?: Array<{
+        name: string;
+        path: string;
+        content: string;
+        language: string;
+    }>;
     // Meta
     error?: string;
     timestamp?: Date;
@@ -78,6 +110,7 @@ export interface WorkflowState {
 
     // Actions
     setUserGoal: (goal: string) => void;
+    setSelectedTemplate: (template: string) => void;
     spawnResearchNodes: (count: number) => void;
     addCollaboratorNode: () => void;
     addPreviewNode: () => void;
@@ -144,6 +177,9 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
     // Set user goal
     setUserGoal: (goal) => set({ userGoal: goal }),
+
+    // Set selected template
+    setSelectedTemplate: (template) => set({ selectedTemplate: template }),
 
     // Spawn research nodes dynamically
     spawnResearchNodes: (count) => set((state) => {

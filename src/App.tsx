@@ -13,12 +13,15 @@ import { SkipToContent } from "@/components/SkipToContent";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/context/AuthContext";
+import { ProtectedRoute as AuthProtectedRoute } from "@/components/auth/ProtectedRoute";
 import '@/i18n/config';
 import { useEffect, Suspense, lazy } from 'react';
 import { initGA } from '@/lib/analytics';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { GoogleTranslateInitializer } from '@/components/GoogleTranslateInitializer';
+import { GoogleTranslateInitializer } from "@/components/GoogleTranslateInitializer";
 import { HelmetProvider } from 'react-helmet-async';
+
 
 // Lazy load all route components for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -39,6 +42,7 @@ const Portfolio = lazy(() => import("./pages/Portfolio"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Chat = lazy(() => import("./pages/Chat"));
+const AdvancedChat = lazy(() => import("./pages/AdvancedChat"));
 const Agent = lazy(() => import("./pages/Agent"));
 const Workflow = lazy(() => import("./pages/Workflow"));
 const Analytics = lazy(() => import("./pages/Analytics"));
@@ -46,6 +50,32 @@ const CodeReview = lazy(() => import("./pages/CodeReview"));
 const Voice = lazy(() => import("./pages/Voice"));
 const Content = lazy(() => import("./pages/Content"));
 const Automation = lazy(() => import("./pages/Automation"));
+
+// Auth pages
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
+
+// Client portal pages
+const ClientDashboardLayout = lazy(() => import("./components/client/ClientDashboardLayout").then(m => ({ default: m.ClientDashboardLayout })));
+const ClientDashboard = lazy(() => import("./pages/client/ClientDashboard"));
+const ClientProjects = lazy(() => import("./pages/client/ClientProjects"));
+const ClientProjectDetail = lazy(() => import("./pages/client/ClientProjectDetail"));
+const ClientInvoices = lazy(() => import("./pages/client/ClientInvoices"));
+const ClientTickets = lazy(() => import("./pages/client/ClientTickets"));
+const ClientSettings = lazy(() => import("./pages/client/ClientSettings"));
+
+// Admin pages
+const AdminClients = lazy(() => import("./pages/admin/AdminClients"));
+const AdminClientDetail = lazy(() => import("./pages/admin/AdminClientDetail"));
+const AdminProjects = lazy(() => import("./pages/admin/AdminProjects"));
+const AdminProjectCreate = lazy(() => import("./pages/admin/AdminProjectCreate"));
+const AdminInvoices = lazy(() => import("./pages/admin/AdminInvoices"));
+const AdminInvoiceCreate = lazy(() => import("./pages/admin/AdminInvoiceCreate"));
+const AIModelManager = lazy(() => import("./pages/admin/AIModelManager"));
+
 const PredictiveAnalytics = lazy(() => import("./pages/PredictiveAnalytics"));
 const Canvas = lazy(() => import("./pages/Canvas"));
 
@@ -62,6 +92,7 @@ const Themes = lazy(() => import("./pages/Themes"));
 const AccessibilityPage = lazy(() => import("./pages/Accessibility"));
 const Gestures = lazy(() => import("./pages/Gestures"));
 const AIMonitor = lazy(() => import("./pages/AIMonitor"));
+const ImageGeneration = lazy(() => import("./pages/ImageGeneration"));
 
 const queryClient = new QueryClient();
 
@@ -82,74 +113,115 @@ const App = () => {
       <HelmetProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <ScrollToTop />
-              <SkipToContent />
-              <AnalyticsTracker />
-              <GoogleTranslateInitializer />
-              <PageTransition>
-                <Suspense fallback={<PageLoader message="Loading page..." />}>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/web-development" element={<WebDevelopment />} />
-                    <Route path="/3d-architecture" element={<ThreeDArchitecture />} />
-                    <Route path="/ai-automation" element={<AIAutomation />} />
-                    <Route path="/gnexus" element={<GNexusPlatform />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/team" element={<Team />} />
-                    <Route path="/careers" element={<Careers />} />
-                    <Route path="/blog" element={<Blog />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/documentation" element={<Documentation />} />
-                    <Route path="/status" element={<Status />} />
-                    <Route path="/portfolio" element={<Portfolio />} />
-                    <Route path="/auth" element={<Auth />} />
+            <AuthProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter basename={import.meta.env.BASE_URL}>
+                <ScrollToTop />
+                <SkipToContent />
+                <AnalyticsTracker />
+                <GoogleTranslateInitializer />
+                <PageTransition>
+                  <Suspense fallback={<PageLoader message="Loading page..." />}>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/web-development" element={<WebDevelopment />} />
+                      <Route path="/3d-architecture" element={<ThreeDArchitecture />} />
+                      <Route path="/ai-automation" element={<AIAutomation />} />
+                      <Route path="/gnexus" element={<GNexusPlatform />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/team" element={<Team />} />
+                      <Route path="/careers" element={<Careers />} />
+                      <Route path="/blog" element={<Blog />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/faq" element={<FAQ />} />
+                      <Route path="/documentation" element={<Documentation />} />
+                      <Route path="/status" element={<Status />} />
+                      <Route path="/portfolio" element={<Portfolio />} />
+                      <Route path="/auth" element={<Auth />} />
 
-                    {/* Protected Routes */}
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="/chat" element={<Chat />} />
-                      <Route path="/agent" element={<Agent />} />
-                      <Route path="/workflow" element={<Workflow />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/code-review" element={<CodeReview />} />
-                      <Route path="/voice" element={<Voice />} />
-                      <Route path="/content" element={<Content />} />
-                      <Route path="/automation" element={<Automation />} />
-                      <Route path="/predictive-analytics" element={<PredictiveAnalytics />} />
-                      <Route path="/canvas" element={<Canvas />} />
+                      {/* Auth Routes (Public) */}
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/verify-email" element={<VerifyEmail />} />
 
-                      {/* Phase 3: Security & Privacy */}
-                      <Route path="/security-audit" element={<SecurityAuditPage />} />
-                      <Route path="/privacy" element={<PrivacyCenter />} />
-                      <Route path="/biometric" element={<BiometricAuth />} />
+                      {/* CLIENT PORTAL - Auth Required */}
+                      <Route element={<AuthProtectedRoute><div /></AuthProtectedRoute>}>
+                        <Route path="/client" element={<ClientDashboardLayout />}>
+                          <Route path="dashboard" element={<ClientDashboard />} />
+                          <Route path="projects" element={<ClientProjects />} />
+                          <Route path="projects/:id" element={<ClientProjectDetail />} />
+                          <Route path="invoices" element={<ClientInvoices />} />
+                          <Route path="tickets" element={<ClientTickets />} />
+                          <Route path="settings" element={<ClientSettings />} />
+                        </Route>
 
-                      {/* Phase 4: Collaboration & Productivity */}
-                      <Route path="/collaboration" element={<Collaboration />} />
-                      <Route path="/projects" element={<Projects />} />
-                      <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
-                      <Route path="/team-chat" element={<TeamChat />} />
+                        {/* AI Features - Available to authenticated users */}
+                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/advanced-chat" element={<AdvancedChat />} />
+                        <Route path="/agent" element={<Agent />} />
+                        <Route path="/workflow" element={<Workflow />} />
+                        <Route path="/code-review" element={<CodeReview />} />
+                        <Route path="/voice" element={<Voice />} />
+                        <Route path="/content" element={<Content />} />
+                        <Route path="/automation" element={<Automation />} />
+                        <Route path="/canvas" element={<Canvas />} />
+                        <Route path="/image-generation" element={<ImageGeneration />} />
+                      </Route>
 
-                      {/* Phase 5: User Experience */}
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                      <Route path="/themes" element={<Themes />} />
-                      <Route path="/accessibility" element={<AccessibilityPage />} />
-                      <Route path="/gestures" element={<Gestures />} />
-                      <Route path="/ai-monitor" element={<AIMonitor />} />
-                    </Route>
+                      {/* ADMIN PANEL - Admin Auth Required */}
+                      <Route element={<AuthProtectedRoute><ProtectedRoute /></AuthProtectedRoute>}>
+                        <Route path="/admin" element={<Admin />} />
 
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </PageTransition>
-              <AIChatWidget />
-              <CommandPalette />
-              <PWAInstallPrompt />
-              <CookieConsent />
-            </BrowserRouter>
+                        {/* Client Management */}
+                        <Route path="/admin/clients" element={<AdminClients />} />
+                        <Route path="/admin/clients/:id" element={<AdminClientDetail />} />
+
+                        {/* Project Management */}
+                        <Route path="/admin/projects" element={<AdminProjects />} />
+                        <Route path="/admin/projects/new" element={<AdminProjectCreate />} />
+
+                        {/* Invoice Management */}
+                        <Route path="/admin/invoices" element={<AdminInvoices />} />
+                        <Route path="/admin/invoices/new" element={<AdminInvoiceCreate />} />
+
+                        {/* AI Management */}
+                        <Route path="/admin/ai-models" element={<AIModelManager />} />
+
+                        <Route path="/analytics" element={<Analytics />} />
+                        <Route path="/predictive-analytics" element={<PredictiveAnalytics />} />
+
+                        {/* Phase 3: Security & Privacy */}
+                        <Route path="/security-audit" element={<SecurityAuditPage />} />
+                        <Route path="/privacy" element={<PrivacyCenter />} />
+                        <Route path="/biometric" element={<BiometricAuth />} />
+
+                        {/* Phase 4: Collaboration & Productivity */}
+                        <Route path="/collaboration" element={<Collaboration />} />
+                        <Route path="/projects" element={<Projects />} />
+                        <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+                        <Route path="/team-chat" element={<TeamChat />} />
+
+                        {/* Phase 5: User Experience */}
+                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/themes" element={<Themes />} />
+                        <Route path="/accessibility" element={<AccessibilityPage />} />
+                        <Route path="/gestures" element={<Gestures />} />
+                        <Route path="/ai-monitor" element={<AIMonitor />} />
+                      </Route>
+
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </PageTransition>
+                <AIChatWidget />
+                <CommandPalette />
+                <PWAInstallPrompt />
+                <CookieConsent />
+              </BrowserRouter>
+            </AuthProvider>
           </TooltipProvider>
         </QueryClientProvider>
       </HelmetProvider>

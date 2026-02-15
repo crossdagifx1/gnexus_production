@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { gsap } from 'gsap';
+import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 // Register GSAP plugins
@@ -66,7 +66,7 @@ export const useGSAP = () => {
   }, []);
 
   const createContext = useCallback((scope: Element | string) => {
-    contextRef.current = gsap.context(() => {}, scope);
+    contextRef.current = gsap.context(() => { }, scope);
     return contextRef.current;
   }, []);
 
@@ -91,7 +91,7 @@ export const useScrollAnimation = (
 
     const ctx = gsap.context(() => {
       const elements = elementRef.current?.querySelectorAll('[data-gsap]');
-      
+
       elements?.forEach((element) => {
         const animationType = element.getAttribute('data-gsap') || 'fadeUp';
         const delay = parseFloat(element.getAttribute('data-delay') || '0');
@@ -161,9 +161,9 @@ export const useTextReveal = (options: {
     const { type = 'words', stagger = 0.05, duration = 0.8 } = options;
     const element = elementRef.current;
     const text = element.textContent || '';
-    
+
     let items: string[] = [];
-    
+
     switch (type) {
       case 'chars':
         items = text.split('');
@@ -177,7 +177,7 @@ export const useTextReveal = (options: {
     }
 
     element.innerHTML = items
-      .map((item, i) => 
+      .map((item, i) =>
         `<span class="gsap-text-item" style="display: inline-block; overflow: hidden;"><span class="gsap-text-inner" style="display: inline-block;">${item}${type === 'words' ? '&nbsp;' : ''}</span></span>`
       )
       .join('');
@@ -222,7 +222,7 @@ export const useStagger = (options: {
 
     const ctx = gsap.context(() => {
       const items = containerRef.current?.querySelectorAll('[data-stagger-item]');
-      
+
       if (items?.length) {
         gsap.fromTo(
           items,

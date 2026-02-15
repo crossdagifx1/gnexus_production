@@ -167,7 +167,7 @@ const ContentGenerator: React.FC = () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">AI Content Generator</h1>
-                    <p className="text-muted-foreground">Create high-quality content with AI assistance</p>
+                    <p className="text-muted-foreground">Create high-quality content with AI assistant</p>
                 </div>
                 <Badge variant="outline" className="flex items-center gap-1">
                     <Sparkles className="w-4 h-4" />

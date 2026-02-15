@@ -6,7 +6,7 @@ import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { TimelineSection } from "@/components/TimelineSection";
 import { FloatingParticles } from "@/components/FloatingParticles";
 import { Target, Eye, Heart, Award, Users, Globe, Zap, Rocket, Star, Shield, Coffee } from "lucide-react";
-import { gsap } from "gsap";
+import gsap from 'gsap';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
