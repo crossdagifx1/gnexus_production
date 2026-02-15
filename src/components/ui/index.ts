@@ -11,13 +11,13 @@ export { InteractiveCard } from './InteractiveCard';
 export { Tag, TagGroup } from './Tag';
 
 // Re-export existing components
-export { Button } from './Button';
-export { Card } from './Card';
-export { Badge } from './Badge';
-export { Input } from './Input';
-export { Label } from './Label';
-export { Textarea } from './Textarea';
-export { Select } from './Select';
-export { Skeleton } from './Skeleton';
+export { Button } from './button';
+export { Card } from './card';
+export { Badge } from './badge';
+export { Input } from './input';
+export { Label } from './label';
+export { Textarea } from './textarea';
+export { Select } from './select';
+export { Skeleton } from './skeleton';
 
 
