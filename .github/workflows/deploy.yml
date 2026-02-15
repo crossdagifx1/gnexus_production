@@ -51,15 +51,15 @@ jobs:
       - name: 🌍 Set Environment
         id: env
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "BASE_PATH=/" >> $GITHUB_OUTPUT
-            echo "SERVER_DIR=./public_html/" >> $GITHUB_OUTPUT
-            echo "Environment: Production"
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "BASE_PATH=/test/" >> $GITHUB_OUTPUT
-            echo "SERVER_DIR=./public_html/test/" >> $GITHUB_OUTPUT
-            echo "Environment: Test"
-          fi
+              if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+                echo "BASE_PATH=/" >> $GITHUB_OUTPUT
+                echo "SERVER_DIR=./" >> $GITHUB_OUTPUT
+                echo "Environment: Production"
+              elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+                echo "BASE_PATH=/test/" >> $GITHUB_OUTPUT
+                echo "SERVER_DIR=./test/" >> $GITHUB_OUTPUT
+                echo "Environment: Test"
+              fi
 
       - name: 🏗️ Build Project
         run: npm run build -- --base=${{ steps.env.outputs.BASE_PATH }}
